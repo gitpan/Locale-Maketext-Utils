@@ -1,0 +1,7 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/Locale-Maketext-Utils.t
+lib/Locale/Maketext/Utils.pm
+META.yml                                 Module meta-data (added by MakeMaker)
