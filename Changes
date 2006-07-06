@@ -1,5 +1,8 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.0.2  Wed Jul  5 22:29:50 2006
+	- added $Encoding support
+	
 0.0.1  Tue Jul  4 18:14:34 2006
 	- original version; created by h2xs 1.23 with options
 		-AXc -n Locale::Maketext::Utils

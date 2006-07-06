@@ -1,9 +1,12 @@
-use Test::More tests => 19;
+use Test::More tests => 21;
 BEGIN { use_ok('Locale::Maketext::Utils') };
 
 package TestApp::Localize;
 use Locale::Maketext::Utils;
 use base 'Locale::Maketext::Utils';
+
+our $Encoding = 'utf8';
+
 our %Lexicon = (
     '_AUTO'    => 42, 
     'Fallback' => 'Fallback orig',
@@ -20,6 +23,9 @@ use base 'TestApp::Localize';
 
 package TestApp::Localize::fr;
 use base 'TestApp::Localize';
+
+our $Encoding = 'utf7';
+
 our %Lexicon = (
     'Hello World' => 'Bonjour Monde',
 );
@@ -39,7 +45,8 @@ ok($en->language_tag() eq 'en', 'get_handle en');
 ok($en->langtag_is_loadable('invalid') eq '0', 'langtag_is_loadable() w/ unloadable tag');
 ok(ref $en->langtag_is_loadable('fr') eq 'TestApp::Localize::fr', 
    'langtag_is_loadable() w/ loadable tag');
-   
+
+ok($en->encoding() eq 'utf8', 'base $Encoding');   
 $en->{'_get_key_from_lookup'} = sub {
      return 'look up version';
 };
@@ -63,6 +70,7 @@ ok($fr->get_base_class() eq 'TestApp::Localize', 'get_base_class()');
 ok($fr->fetch('Hello World') eq 'Bonjour Monde', 'fetch() method'); 
 # safe to assume print() will work to if fetch() does...
 
+ok($fr->encoding() eq 'utf7', 'class $Encoding'); 
 ok($fr->fetch('Fallback') eq 'Fallback orig', 'fallback  behavior');
 ok($fr->fetch('Thank you') eq 'Thank you', 'fail_with _AUTO behavior');
 

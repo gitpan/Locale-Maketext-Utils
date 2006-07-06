@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 use strict;
 use warnings;
 
-use version;our $VERSION = qv('0.0.1');
+use version;our $VERSION = qv('0.0.2');
 
 use Locale::Maketext;
 use base qw(Locale::Maketext);
@@ -13,6 +13,13 @@ sub init {
     
     $lh->SUPER::init();
     $lh->remove_key_from_lexicons('_AUTO');
+    
+    my $ns = $lh->get_base_class() . '::Encoding'; # use the base class if available
+    no strict 'refs';
+    $lh->{'encoding'} = ${ $ns } if ${ $ns };
+    
+    $ns = ref($lh) . '::Encoding'; # then the class itself if available
+    $lh->{'encoding'} = ${ $ns } if ${ $ns };
     
     $lh->fail_with(sub {
          my ($lh, $key, @args) = @_;
@@ -101,7 +108,7 @@ __END__
 
 =head1 NAME
 
-Locale::Maketext::Utils - Adds some utility methods and failure handling to Local::Maketext handles
+Locale::Maketext::Utils - Adds some utility funtionality and failure handling to Local::Maketext handles
 
 =head1 SYNOPSIS
 
@@ -111,6 +118,8 @@ In MyApp/Localize.pm:
     use Locale::Maketext::Utils; 
     use base 'Locale::Maketext::Utils'; 
   
+    our $Encoding = 'utf8'; # see below
+    
     # no _AUTO
     our %Lexicon = (...
 
@@ -121,6 +130,14 @@ Then in your script:
    my $lang = MyApp::Localize->get_handle('fr');
 
 Now $lang is a normal Locale::Maketext handle object but now there are some new methods and failure handling which are described below.
+
+=head1 our $Encoding
+
+If you set your class's $Encoding variable the object's encoding will be set to that.
+
+   my $enc = $lh->encoding(); 
+
+$enc is $MyApp::Localize::fr::Encoding || $MyApp::Localize::Encoding || encoding()'s default
 
 =head1 METHODS
 
