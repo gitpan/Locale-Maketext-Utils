@@ -1,5 +1,9 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.0.3 Fri Jul  7 16:04:40 2006
+	- Fixed up POD
+	- added [loadable_]lang_names_hashref()
+	
 0.0.2  Wed Jul  5 22:29:50 2006
 	- added $Encoding support
 	

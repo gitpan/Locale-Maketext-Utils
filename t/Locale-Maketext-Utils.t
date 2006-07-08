@@ -1,4 +1,4 @@
-use Test::More tests => 21;
+use Test::More tests => 28;
 BEGIN { use_ok('Locale::Maketext::Utils') };
 
 package TestApp::Localize;
@@ -85,3 +85,45 @@ $fr->append_to_lexicons({
 
 ok($fr->fetch('Thank you') eq 'Merci', 'append_to_lexicons()');
 ok($fr->fetch('Fallback') eq 'Fallback new', 'fallback behavior after append');
+
+my $fr_hr = $fr->lang_names_hashref('en-uk', 'it', 'xxyyzz');
+ok($fr_hr->{'en'} eq 'Anglais', 'names default');
+ok($fr_hr->{'en-uk'} eq 'Anglais (UK)', 'names suffix');
+ok($fr_hr->{'it'} eq 'Italien', 'names normal');
+ok($fr_hr->{'xxyyzz'} eq 'xxyyzz', 'names fake');
+
+my $loadable_hr = $fr->loadable_lang_names_hashref('en-uk', 'it', 'xxyyzz', 'fr');
+
+ok( (keys %{ $loadable_hr }) == 2
+    && exists $loadable_hr->{'en'}
+    && exists $loadable_hr->{'fr'}, 'loadable names');
+
+# prepare 
+my $dir = 'my_lang_pm_search_paths_test';
+mkdir $dir;
+mkdir "$dir/TestApp";
+mkdir "$dir/TestApp/Localize";
+die "mkdir $@" if !-d "$dir/TestApp/Localize";
+open my $pm, '>', "$dir/TestApp/Localize/it.pm" or die "open $!";
+close $pm;
+
+# _lang_pm_search_paths
+$en->{'_lang_pm_search_paths'} = [$dir];
+my $dir_hr = $en->lang_names_hashref();
+ok( (keys %{ $dir_hr }) == 2
+    && exists $dir_hr->{'en'}
+    && exists $dir_hr->{'it'}, '_lang_pm_search_paths names');
+
+# @INC
+unshift @INC, $dir;
+my $inc_hr = $fr->lang_names_hashref();
+ok( (keys %{ $inc_hr }) == 2
+    && exists $inc_hr->{'en'}
+    && exists $inc_hr->{'it'}, '@INC names');
+    
+# cleanup 
+unlink "$dir/TestApp/Localize/it.pm";
+rmdir "$dir/TestApp/Localize";
+rmdir "$dir/TestApp";
+rmdir $dir;
+warn "Could not cleanup $dir" if -d $dir;
