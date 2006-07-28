@@ -2,8 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-
-use version;our $VERSION = qv('0.0.3');
+use version;our $VERSION = qv('0.0.4');
 
 use Locale::Maketext;
 use base qw(Locale::Maketext);
@@ -13,13 +12,22 @@ sub init {
     
     $lh->SUPER::init();
     $lh->remove_key_from_lexicons('_AUTO');
-    
-    my $ns = $lh->get_base_class() . '::Encoding'; # use the base class if available
-    no strict 'refs';
-    $lh->{'encoding'} = ${ $ns } if ${ $ns };
-    
-    $ns = ref($lh) . '::Encoding'; # then the class itself if available
-    $lh->{'encoding'} = ${ $ns } if ${ $ns };
+
+    # use the base class if available, then the class itself if available
+    for my $ns ( $lh->get_base_class(),  ref($lh) ) {
+        no strict 'refs';
+
+        if( defined ${ $ns . '::Encoding' } ) {
+            $lh->{'encoding'} = ${ $ns . '::Encoding' } if ${ $ns . '::Encoding' };  
+        }
+        
+        if( defined ${ $ns . '::Onesided' } ) {
+            if(${ $ns . '::Onesided' }) {
+                %{ $ns . '::Lexicon' } 
+                    = map { $_ => $_ } keys %{ $ns . '::Lexicon' };
+            }
+        }
+    }
     
     $lh->fail_with(sub {
          my ($lh, $key, @args) = @_;
@@ -45,6 +53,19 @@ sub init {
     });
 }
 
+sub make_alias {
+    my ($lh, $pkgs, $is_base_class) = @_;    
+    
+    my $ns = ref $lh ? ref $lh : $lh;
+    return if $ns !~ m{ \A \w+ (::\w+)* \z }xms;
+    my $base = $is_base_class ? $ns : $lh->get_base_class();
+    
+    for my $pkg (ref $pkgs ? @{ $pkgs } : $pkgs) {
+        next if $pkg !~ m{ \A \w+ (::\w+)* \z }xms;
+        eval qq{package $base\:\:$pkg;use base '$ns';package $ns;};
+    }
+}
+
 sub remove_key_from_lexicons {
     my($lh, $key) = @_;
     my $idx = 0;
@@ -57,7 +78,8 @@ sub remove_key_from_lexicons {
 }
 
 sub get_base_class {
-    my $ns = ref shift;    
+    my $ns = shift;
+    $ns = ref $ns if ref $ns;        
     $ns =~ s{::\w+$}{};
     return $ns;
 }
@@ -198,6 +220,45 @@ If you set your class's $Encoding variable the object's encoding will be set to 
 
 $enc is $MyApp::Localize::fr::Encoding || $MyApp::Localize::Encoding || encoding()'s default
 
+=head1 our $Onesided
+
+Setting this to a true value treats the class's %Lexicon as one sided. What that means is if the hash's keys and values will be the same (IE your main Lexicon) you can specify it in the key only and leave the value blank. 
+
+So instead of a Lexicon entry like this:
+
+   q{Hello I love you won't you tell me your name} => q{Hello I love you won't you tell me your name},
+
+You just do:
+  
+    q{Hello I love you won't you tell me your name} => '',
+    
+The advantages are a smaller file, less prone to mistyping or mispasting, and 
+most important of all someone translating it can simply copy it into their module and enter their translation instead of having to remove the value first.   
+ 
+=head1 Aliasing
+
+In your package you can create an alias with this:
+
+   __PACKAGE__->make_alias($langs, 1);
+   or
+   MyApp::Localize->make_alias([qw(en en_us i_default)], 1);
+   
+   __PACKAGE__->make_alias($langs);
+   or
+   MyApp::Localize::fr->make_alias('fr_ca');
+   
+Where $langs is a string or a reference to an array of strings that are the aliased language tags.
+
+You must set the second argument to true if __PACKAGE__ is the base class.
+
+The reason is there is no way to tell if the pakage name is the base class or not.
+
+This needs done before you call get_handle() or it will have no effect on your object really.
+
+Ideally you'd put all calls to this in the main lexicon to ensure it will apply to any get_handle() calls.
+
+Alternatively, and at times more ideally, you can keep each module's aliases in them and then when setting your obj require the module first.
+
 =head1 METHODS
 
 =head2 $lh->print($key, @args);
@@ -330,6 +391,39 @@ That way it will continue on to the part below:
 
 If $lh->{'_get_key_from_lookup'} is not a code ref, or $lh->{'_get_key_from_lookup'} returned undef then this method is called with the arguments ($lh, $key, @args) right before the failure handler does its _AUTO wonderfulness.
 
+=head1 Project example
+
+Main Class:
+
+    package MyApp::Localize;
+    use Locale::Maketext::Utils; 
+    use base 'Locale::Maketext::Utils'; 
+
+    our $Onesided = 1;
+    our $Encoding = 'utf8'; 
+    
+    __PACKAGE__->make_alias([qw(en en_us i_default)], 1);
+    
+    our %Lexicon = (
+        'Hello World' => '',
+    );
+    
+    1;
+
+French class: 
+
+    package MyApp::Localize::fr;
+    use Locale::Maketext::Utils; 
+    use base 'Locale::Maketext::Utils'; 
+
+    __PACKAGE__->make_alias('fr_ca');
+    
+    our %Lexicon = (
+        'Hello World' => 'Bonjour Monde',
+    );
+    
+    1;
+              
 =head1 SEE ALSO
 
 L<Locale::Maketext>, L<Locales::Language>

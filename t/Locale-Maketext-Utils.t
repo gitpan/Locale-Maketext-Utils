@@ -1,4 +1,4 @@
-use Test::More tests => 28;
+use Test::More tests => 35;
 BEGIN { use_ok('Locale::Maketext::Utils') };
 
 package TestApp::Localize;
@@ -10,7 +10,10 @@ our $Encoding = 'utf8';
 our %Lexicon = (
     '_AUTO'    => 42, 
     'Fallback' => 'Fallback orig',
+    'One Side' => 'I am not one sides',
 );
+
+__PACKAGE__->make_alias('i_alias1', 1);
 
 package TestApp::Localize::en;
 use base 'TestApp::Localize';
@@ -20,6 +23,15 @@ use base 'TestApp::Localize';
 
 package TestApp::Localize::i_default;
 use base 'TestApp::Localize';
+
+package TestApp::Localize::i_oneside;
+use base 'TestApp::Localize';
+
+__PACKAGE__->make_alias( [qw(i_alias2 i_alias3)], 0 ); 
+our $Onesided = 1;
+our %Lexicon = (
+    'One Side' => '',
+);
 
 package TestApp::Localize::fr;
 use base 'TestApp::Localize';
@@ -60,6 +72,19 @@ $bad->{'_log_phantom_key'} = sub {
 ok($bad->maketext('Not in Lexicon') eq 'Not in Lexicon'
    && $ENV{'_log_phantum_key'} eq'done', '_log_phantom_key');
 
+my $oneside = TestApp::Localize->get_handle('i_oneside');
+ok($TestApp::Localize::i_oneside::Lexicon{'One Side'} eq 'One Side', '$Onesided');
+
+my $alias1 = TestApp::Localize->get_handle('i_alias1');
+ok($alias1->get_language_tag() eq 'i_alias1', '$Aliaspkg w/ string');
+my $alias2 = TestApp::Localize->get_handle('i_alias2');
+ok($alias2->get_language_tag() eq 'i_alias2', '$Aliaspkg w/ array ref 1');
+my $alias3 = TestApp::Localize->get_handle('i_alias3');
+ok($alias3->get_language_tag() eq 'i_alias3', '$Aliaspkg w/ array ref 2');
+
+ok($alias1->fetch('One Side') eq 'I am not one sides', 'Base class make_alias');
+ok($alias2->fetch('One Side') eq 'One Side', 'Extended class make_alias');
+
 my $en_US = TestApp::Localize->get_handle('en-US');
 ok($en_US->language_tag() eq 'en-us', 'get_handle en-US');
 ok($en_US->get_language_tag() eq 'en_us', 'get_language_tag()');
@@ -99,13 +124,30 @@ ok( (keys %{ $loadable_hr }) == 2
     && exists $loadable_hr->{'fr'}, 'loadable names');
 
 # prepare 
-my $dir = 'my_lang_pm_search_paths_test';
+my $dir = './my_lang_pm_search_paths_test';
 mkdir $dir;
 mkdir "$dir/TestApp";
 mkdir "$dir/TestApp/Localize";
 die "mkdir $@" if !-d "$dir/TestApp/Localize";
+
 open my $pm, '>', "$dir/TestApp/Localize/it.pm" or die "open $!";
+    print {$pm} <<'IT_END';
+package TestApp::Localize::it;
+use base 'TestApp::Localize';
+
+__PACKAGE__->make_alias('it_us');
+
+our %Lexicon = (
+    'Hello World' => 'Ciao Mondo',  
+);
+
+1;
+IT_END
 close $pm;
+
+require "$dir/TestApp/Localize/it.pm";
+my $it_us = TestApp::Localize->get_handle('it_us');
+ok($it_us->fetch('Hello World') eq 'Ciao Mondo', '.pm file alias test');
 
 # _lang_pm_search_paths
 $en->{'_lang_pm_search_paths'} = [$dir];
@@ -120,7 +162,7 @@ my $inc_hr = $fr->lang_names_hashref();
 ok( (keys %{ $inc_hr }) == 2
     && exists $inc_hr->{'en'}
     && exists $inc_hr->{'it'}, '@INC names');
-    
+
 # cleanup 
 unlink "$dir/TestApp/Localize/it.pm";
 rmdir "$dir/TestApp/Localize";
