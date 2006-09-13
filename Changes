@@ -1,5 +1,8 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.0.5  Wed Sep 14 11:33:57 2006
+        - re bundled without Mac's ._ files in the tarball
+
 0.0.4 Fri Jul 28 18:44:12 2006
 	- added $Onesided
 	- added make_alias
