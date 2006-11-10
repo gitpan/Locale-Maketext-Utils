@@ -1,4 +1,4 @@
-use Test::More tests => 35;
+use Test::More tests => 42;
 BEGIN { use_ok('Locale::Maketext::Utils') };
 
 package TestApp::Localize;
@@ -94,6 +94,22 @@ ok($fr->language_tag() eq 'fr', 'get_handle fr');
 ok($fr->get_base_class() eq 'TestApp::Localize', 'get_base_class()');
 ok($fr->fetch('Hello World') eq 'Bonjour Monde', 'fetch() method'); 
 # safe to assume print() will work to if fetch() does...
+
+{
+    local $/ = "\n"; # just to be sure we're testing consistently...
+    ok($fr->get('Hello World') eq "Bonjour Monde\n", 'get() method'); 
+    # safe to assume say() will work to if get() does...
+}
+
+## test AUTOLOAD:
+ok($fr->fetch_p('Hello World') eq '<p>Bonjour Monde</p>', 'AUTOLOAD tag');
+ok($fr->fetch_p_open('Hello World') eq '<p>Bonjour Monde', 'AUTOLOAD tag open');
+ok($fr->fetch_p_close('Hello World') eq 'Bonjour Monde</p>', 'AUTOLOAD tag close');
+
+ok($fr->fetch_p_err('Hello World') eq '<p class="err">Bonjour Monde</p>', 'AUTOLOAD tag class');
+ok($fr->fetch_p_err_open('Hello World') eq '<p class="err">Bonjour Monde', 'AUTOLOAD tag class open');
+ok($fr->fetch_p_err_close('Hello World') eq 'Bonjour Monde</p>', 'AUTOLOAD tag class close');
+# end AUTOLOAD tests
 
 ok($fr->encoding() eq 'utf7', 'class $Encoding'); 
 ok($fr->fetch('Fallback') eq 'Fallback orig', 'fallback  behavior');

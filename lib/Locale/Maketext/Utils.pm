@@ -2,7 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-use version;our $VERSION = qv('0.0.5');
+use version;our $VERSION = qv('0.0.6');
 
 use Locale::Maketext;
 use base qw(Locale::Maketext);
@@ -23,8 +23,11 @@ sub init {
         
         if( defined ${ $ns . '::Onesided' } ) {
             if(${ $ns . '::Onesided' }) {
-                %{ $ns . '::Lexicon' } 
-                    = map { $_ => $_ } keys %{ $ns . '::Lexicon' };
+                my $lex_ref = \%{ $ns . '::Lexicon' };
+                %{ $ns . '::Lexicon' } = map { 
+                    my $v = $lex_ref->{$_} ne '' ? $lex_ref->{$_} : $_;
+                    $_ => $v 
+                } keys %{ $ns . '::Lexicon' };
             }
         }
     }
@@ -124,6 +127,21 @@ sub fetch {
     return shift->maketext(@_);	
 }
 
+sub say {
+    local $Carp::CarpLevel = 1; 
+    my $text = shift->maketext(@_);
+    local $/ = "\n" if !defined $/ || !$/; # otherwise assume they are not stupid 
+    print $text . $/ if $text;
+}
+
+sub get {
+    local $Carp::CarpLevel = 1; 
+    my $text = shift->maketext(@_);
+    local $/ = "\n" if !defined $/ || !$/; # otherwise assume they are not stupid   
+    return $text . $/ if $text;
+    return; 
+}
+
 sub lang_names_hashref {
     my ($lh, @langcodes) = @_;
     
@@ -181,6 +199,39 @@ sub loadable_lang_names_hashref {
     }
     
     return $langname;
+}
+
+sub AUTOLOAD {
+    my $self = shift;
+	my $type = ref($self) or Carp::croak "$self is not an object";
+
+	my $name = lc( our $AUTOLOAD );
+	$name =~ s{.*:}{};
+
+    my @name = split /_/, $name;
+    if($name[0] eq 'say' || $name[0] eq 'print' || $name[0] eq 'get' || $name[0] eq 'fetch') {
+        my $method = $name[0];
+        my $tag    = $name[1];
+        my $classy = @name == 4 ? $name[2] : '';
+        my $part   = @name == 4 ? $name[3] : $name[2];
+        $part      = '' if !$part;
+        
+        if($part ne 'open' && $part ne 'close') {
+            $classy = $part;
+            $part   = '';
+        }
+
+        my $string = $classy ? qq(<$tag class="$classy">) : "<$tag>" if $part eq 'open' || !$part;
+        $string   .= $self->fetch(@_);
+        $string   .= "</$tag>" if $part eq 'close' || !$part;
+        local $/   = "\n" if !defined $/      || !$/; # otherwise assume they are not stupid
+        $string   .= "$/"   if $method eq 'say' || $method eq 'get';
+
+        print  $string    if $method eq 'say' || $method eq 'print';
+        return $string    if $method eq 'get' || $method eq 'fetch';
+    }
+
+    return;
 }
 
 1;
@@ -272,6 +323,14 @@ Shortcut for
 Alias for 
 
     $lh->maketext($key, @args);
+
+=head2 $lh->say($key, @args);
+
+Like $lh->print($key, @args); except appends $/ || \n
+
+=head2 $lh->get($key, @args);
+
+Like $lh->fetch($key, @args); except appends $/ || \n
 
 =head2 $lh->get_base_class()
 
