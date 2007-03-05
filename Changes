@@ -1,5 +1,10 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.0.7  Sun Mar  4 19:50:57 2007
+	- added env_* functions
+    - changed get() and say() '||' logic to ternaries
+	- added $ENV{'maketext_obj'} support
+	
 0.0.6  Wed Nov  8 23:08:18 2006
 	- Added say(), get(), and AUTOLOAD(). Made $Onesided hashes retain the value of keys whose value is not ''
 	

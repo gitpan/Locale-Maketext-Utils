@@ -1,11 +1,12 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Locale-Maketext-Utils
-version:      v0.0.6
+version:      v0.0.7
 version_from: lib/Locale/Maketext/Utils.pm
 installdirs:  site
 requires:
     File::Slurp:                   0
+    Local::Maketext::Pseudo:       0
     Locale::Maketext:              0
     Locales::Language:             0
     version:                       0

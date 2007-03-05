@@ -1,4 +1,4 @@
-Locale-Maketext-Utils version 0.0.6
+Locale-Maketext-Utils version 0.0.7
 ==================================
 
 INSTALLATION
@@ -20,7 +20,7 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-  Locale::Maketext, version
+  Locale::Maketext, version, Local::Maketext::Pseudo
 
 COPYRIGHT AND LICENCE
 

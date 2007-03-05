@@ -2,13 +2,38 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-use version;our $VERSION = qv('0.0.6');
+use version;our $VERSION = qv('0.0.7');
 
 use Locale::Maketext;
+use Locale::Maketext::Pseudo;
 use base qw(Locale::Maketext);
+
+our @EXPORT_OK = qw(env_maketext env_print env_fetch env_say env_get);
+
+sub env_maketext {
+    goto &Locale::Maketext::Pseudo::env_maketext;
+}
+
+sub env_print {
+    goto &Locale::Maketext::Pseudo::env_print;
+}       
+
+sub env_fetch { 
+    goto &Locale::Maketext::Pseudo::env_fetch; 
+}               
+                    
+sub env_say { 
+    goto &Locale::Maketext::Pseudo::env_say;
+}
+    
+sub env_get {
+     goto &Locale::Maketext::Pseudo::env_get;          
+}
 
 sub init {
     my ($lh) = @_;	
+    
+    $ENV{'maketext_obj'} = $lh if !$ENV{'maketext_obj_skip_env'};
     
     $lh->SUPER::init();
     $lh->remove_key_from_lexicons('_AUTO');
@@ -130,14 +155,14 @@ sub fetch {
 sub say {
     local $Carp::CarpLevel = 1; 
     my $text = shift->maketext(@_);
-    local $/ = "\n" if !defined $/ || !$/; # otherwise assume they are not stupid 
+    local $/ = !defined $/ || !$/ ? "\n" : $/; # otherwise assume they are not stupid 
     print $text . $/ if $text;
 }
 
 sub get {
     local $Carp::CarpLevel = 1; 
     my $text = shift->maketext(@_);
-    local $/ = "\n" if !defined $/ || !$/; # otherwise assume they are not stupid   
+    local $/ = !defined $/ || !$/ ? "\n" : $/; # otherwise assume they are not stupid   
     return $text . $/ if $text;
     return; 
 }
@@ -482,10 +507,35 @@ French class:
     );
     
     1;
-              
+
+
+=head1 ENVIRONMENT
+
+$ENV{'maketext_obj'} gets set to the language object on initialization ( for functions to use, see "FUNCTIONS" below ) unless $ENV{'maketext_obj_skip_env'} is true
+
+=head1 FUNCTIONS
+
+All are exportable, each takes the same args as the method of the same name (sans 'env_') 
+and each uses $ENV{'maketext_obj'} if valid or it uses a L<Local::Maketext::Pseudo> object.
+
+=over 4
+
+=item env_maketext()
+
+=item env_fetch()
+
+=item env_print()
+
+=item env_get()
+
+=item env_say()
+
+=back
+
+
 =head1 SEE ALSO
 
-L<Locale::Maketext>, L<Locales::Language>
+L<Locale::Maketext>, L<Locales::Language>, L<Locale::Maketext::Pseudo>
 
 =head1 SUGGESTIONS
 

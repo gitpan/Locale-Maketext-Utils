@@ -1,4 +1,4 @@
-use Test::More tests => 42;
+use Test::More tests => 44;
 BEGIN { use_ok('Locale::Maketext::Utils') };
 
 package TestApp::Localize;
@@ -44,15 +44,22 @@ our %Lexicon = (
 
 package main;
 
-my $noarg = TestApp::Localize->get_handle();
-ok($noarg->language_tag() eq 'en', 'get_handle no arg');
+{
+    local $ENV{'maketext_obj_skip_env'} = 1;
+    my $noarg = TestApp::Localize->get_handle();
+    ok($noarg->language_tag() eq 'en', 'get_handle no arg');
 
-my $first_lex = (@{ $noarg->_lex_refs() })[0];
-ok(!exists $first_lex->{'_AUTO'}, '_AUTO removal/remove_key_from_lexicons()');
-ok($noarg->{'_removed_from_lexicons'}{'0'}{'_AUTO'} eq '42', 
-   '_AUTO removal archive/remove_key_from_lexicons()');
+    my $first_lex = (@{ $noarg->_lex_refs() })[0];
+    ok(!exists $first_lex->{'_AUTO'}, '_AUTO removal/remove_key_from_lexicons()');
+    ok($noarg->{'_removed_from_lexicons'}{'0'}{'_AUTO'} eq '42', 
+       '_AUTO removal archive/remove_key_from_lexicons()');
+       
+    ok($ENV{'maketext_obj'} ne $noarg, 'ENV maketext_obj_skip_env true');
+}
 
 my $en = TestApp::Localize->get_handle('en');
+ok($ENV{'maketext_obj'} eq $en, 'ENV maketext_obj_skip_env false');
+
 ok($en->language_tag() eq 'en', 'get_handle en');
 ok($en->langtag_is_loadable('invalid') eq '0', 'langtag_is_loadable() w/ unloadable tag');
 ok(ref $en->langtag_is_loadable('fr') eq 'TestApp::Localize::fr', 
