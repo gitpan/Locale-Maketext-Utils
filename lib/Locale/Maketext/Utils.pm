@@ -2,7 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-use version;our $VERSION = qv('0.0.7');
+use version;our $VERSION = qv('0.0.8');
 
 use Locale::Maketext;
 use Locale::Maketext::Pseudo;
@@ -55,6 +55,17 @@ sub init {
                 } keys %{ $ns . '::Lexicon' };
             }
         }
+        ${ $ns . '::Lexicon' }{'-DateTime'} = sub {
+			my ($lh, $dta, $str) = @_;
+			require DateTime;		
+		    my $dt = !defined $dta      ? DateTime->now()
+		           : ref $dta eq 'HASH' ? DateTime->new( %{ $dta } ) 
+		           :                      $dta->clone()
+		           ; 
+		    $dt->{'locale'} = DateTime::Locale->load( $lh->language_tag() );
+		    my $format = ref $str eq 'CODE' ? $str->( $dt ) : $str;
+			return $dt->strftime( $format || '%F %H:%M:%S' );	
+		};
     }
     
     $lh->fail_with(sub {
@@ -275,7 +286,7 @@ In MyApp/Localize.pm:
     use Locale::Maketext::Utils; 
     use base 'Locale::Maketext::Utils'; 
   
-    our $Encoding = 'utf8'; # see below
+    our $Encoding = 'utf-8'; # see below
     
     # no _AUTO
     our %Lexicon = (...
@@ -334,6 +345,32 @@ This needs done before you call get_handle() or it will have no effect on your o
 Ideally you'd put all calls to this in the main lexicon to ensure it will apply to any get_handle() calls.
 
 Alternatively, and at times more ideally, you can keep each module's aliases in them and then when setting your obj require the module first.
+
+=head1 Special Lexicon keys
+
+These are special keys you're Lexicon will have.
+
+=over 4
+
+=item * -DateTime
+
+This key allows you to add localization to your language object.
+
+    $lang->maketext('-DateTime');
+    $lang->maketext('-DateTime', $datetime); 
+    $lang->maketext('-DateTime', $datetime, $format);
+
+In the example above: 
+
+$datetime could be a L<DateTime> object *or* a hashref of args suitable for DateTime->new(). undefined = DateTime->now()
+
+$format could be a string suitable for DateTime->strftime *or* a coderef that gets passed a DateTime object and returns a string suitable for DateTime->strftime. undef = '%F %H:%M:%S'
+
+    sub { $_[0]->{'locale'}->long_datetime_format } # use localized DateTime::Locale format method    
+
+    $lang->maketext('-DateTime', undef, sub { $_[0]->{'locale'}->long_date_format } ); # current time in format and language of Lexicon's Locale
+
+=back
 
 =head1 METHODS
 
@@ -484,7 +521,7 @@ Main Class:
     use base 'Locale::Maketext::Utils'; 
 
     our $Onesided = 1;
-    our $Encoding = 'utf8'; 
+    our $Encoding = 'utf-8'; 
     
     __PACKAGE__->make_alias([qw(en en_us i_default)], 1);
     
@@ -497,8 +534,7 @@ Main Class:
 French class: 
 
     package MyApp::Localize::fr;
-    use Locale::Maketext::Utils; 
-    use base 'Locale::Maketext::Utils'; 
+    use base 'MyApp::Localize';
 
     __PACKAGE__->make_alias('fr_ca');
     

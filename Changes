@@ -1,5 +1,9 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.0.8  Sat Oct 13 14:13:37 2007
+    - Minor POD fixup
+    - '-DateTime' key to all %Lexicons's
+
 0.0.7  Sun Mar  4 19:50:57 2007
 	- added env_* functions
     - changed get() and say() '||' logic to ternaries

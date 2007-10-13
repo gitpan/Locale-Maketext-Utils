@@ -1,4 +1,4 @@
-use Test::More tests => 44;
+use Test::More tests => 51;
 BEGIN { use_ok('Locale::Maketext::Utils') };
 
 package TestApp::Localize;
@@ -185,6 +185,17 @@ my $inc_hr = $fr->lang_names_hashref();
 ok( (keys %{ $inc_hr }) == 2
     && exists $inc_hr->{'en'}
     && exists $inc_hr->{'it'}, '@INC names');
+
+# -DateTime
+
+ok( $en->maketext('-DateTime') =~ m{ \A \d{4} [-] \d{2} [-] \d{2} \s \d\d [:] \d\d [:] \d\d \z }xms, 'undef 2nd undef 3rd');
+my $dt_obj = DateTime->new('year'=> 1978); # DateTime already brought in by prev -DateTime call
+ok( $en->maketext('-DateTime', $dt_obj) eq '1978-01-01 00:00:00', '2nd arg object');
+ok( $en->maketext('-DateTime', {'year'=>1977}, '') eq '1977-01-01 00:00:00', '2nd arg hashref');
+ok( $en->maketext('-DateTime', {'year'=>1977}, '%Y') eq '1977', '3nd arg string');
+ok( $en->maketext('-DateTime', {'year'=>1977}, sub { $_[0]->{'locale'}->long_date_format }) eq 'January 1, 1977', '3nd arg coderef');
+ok( $en->maketext('-DateTime', {'year'=>1978, 'month'=>11, 'day'=>13}, sub { $_[0]->{'locale'}->long_date_format }) eq 'November 13, 1978' ,'-DateTime English');
+ok( $fr->maketext('-DateTime', {'year'=>1999, 'month'=>7, 'day'=>17}, sub { $_[0]->{'locale'}->long_date_format }) eq '17 juillet 1999' ,'-DateTime French');
 
 # cleanup 
 unlink "$dir/TestApp/Localize/it.pm";

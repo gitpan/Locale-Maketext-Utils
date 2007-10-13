@@ -9,6 +9,7 @@ WriteMakefile(
         'File::Slurp'       => 0,
         'Locales::Language' => 0,
         'Local::Maketext::Pseudo' => 0,
+        'DateTime'          => 0,
     },
     ($] >= 5.005 ?   
       (ABSTRACT_FROM  => 'lib/Locale/Maketext/Utils.pm', 
