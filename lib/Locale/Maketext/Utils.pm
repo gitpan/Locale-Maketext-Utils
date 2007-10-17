@@ -2,7 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-use version;our $VERSION = qv('0.0.8');
+use version;our $VERSION = qv('0.0.9');
 
 use Locale::Maketext;
 use Locale::Maketext::Pseudo;
@@ -64,7 +64,7 @@ sub init {
 		           ; 
 		    $dt->{'locale'} = DateTime::Locale->load( $lh->language_tag() );
 		    my $format = ref $str eq 'CODE' ? $str->( $dt ) : $str;
-			return $dt->strftime( $format || '%F %H:%M:%S' );	
+			return $dt->strftime( $format || $dt->{'locale'}->long_date_format() );	
 		};
     }
     
@@ -364,11 +364,11 @@ In the example above:
 
 $datetime could be a L<DateTime> object *or* a hashref of args suitable for DateTime->new(). undefined = DateTime->now()
 
-$format could be a string suitable for DateTime->strftime *or* a coderef that gets passed a DateTime object and returns a string suitable for DateTime->strftime. undef = '%F %H:%M:%S'
+$format could be a string suitable for DateTime->strftime (Eg '%F %H:%M:%S') *or* a coderef that gets passed a DateTime object and returns a string suitable for DateTime->strftime. undef = L<DateTime::Locale>'s long_date_format()
 
     sub { $_[0]->{'locale'}->long_datetime_format } # use localized DateTime::Locale format method    
 
-    $lang->maketext('-DateTime', undef, sub { $_[0]->{'locale'}->long_date_format } ); # current time in format and language of Lexicon's Locale
+    $lang->maketext('-DateTime', undef, sub { $_[0]->{'locale'}->long_datetime_format } ); # current datetime in format and language of Lexicon's Locale
 
 =back
 
