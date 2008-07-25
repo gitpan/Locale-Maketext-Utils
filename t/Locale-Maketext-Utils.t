@@ -46,14 +46,16 @@ package main;
 
 {
     local $ENV{'maketext_obj_skip_env'} = 1;
+    local $ENV{'maketext_obj'} = 'CURRENT VALUE';
     my $noarg = TestApp::Localize->get_handle();
-    ok($noarg->language_tag() eq 'en-us', 'get_handle no arg');
+    # depending on their Locales::Base may not have one of these
+    ok($noarg->language_tag() eq 'en' || $noarg->language_tag() eq 'en-us', 'get_handle no arg');
 
     my $first_lex = (@{ $noarg->_lex_refs() })[0];
     ok(!exists $first_lex->{'_AUTO'}, '_AUTO removal/remove_key_from_lexicons()');
     ok($noarg->{'_removed_from_lexicons'}{'0'}{'_AUTO'} eq '42', 
        '_AUTO removal archive/remove_key_from_lexicons()');
-       
+
     ok($ENV{'maketext_obj'} ne $noarg, 'ENV maketext_obj_skip_env true');
 }
 

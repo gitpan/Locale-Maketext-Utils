@@ -2,7 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-use version;our $VERSION = qv('0.0.10');
+use version;our $VERSION = qv('0.0.11');
 
 use Locale::Maketext;
 use Locale::Maketext::Pseudo;
