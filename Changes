@@ -1,5 +1,8 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.0.10  Thu Jul 23 10:33:47 2008
+    - fix makefile entry
+    
 0.0.9  Tue Oct 16 22:47:04 2007
 	- make test case insensitiive in case that ever changes
 	- more sensible -DateTime format (why have SQL datetime when we want language!)
