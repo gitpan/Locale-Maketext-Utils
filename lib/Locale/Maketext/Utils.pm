@@ -2,7 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-use version;our $VERSION = qv('0.0.11');
+use version;our $VERSION = qv('0.0.12');
 
 use Locale::Maketext;
 use Locale::Maketext::Pseudo;
@@ -55,17 +55,6 @@ sub init {
                 } keys %{ $ns . '::Lexicon' };
             }
         }
-        ${ $ns . '::Lexicon' }{'-DateTime'} = sub {
-			my ($lh, $dta, $str) = @_;
-			require DateTime;		
-		    my $dt = !defined $dta      ? DateTime->now()
-		           : ref $dta eq 'HASH' ? DateTime->new( %{ $dta } ) 
-		           :                      $dta->clone()
-		           ; 
-		    $dt->{'locale'} = DateTime::Locale->load( $lh->language_tag() );
-		    my $format = ref $str eq 'CODE' ? $str->( $dt ) : $str;
-			return $dt->strftime( $format || $dt->{'locale'}->long_date_format() );	
-		};
     }
     
     $lh->fail_with(sub {
@@ -237,6 +226,151 @@ sub loadable_lang_names_hashref {
     return $langname;
 }
 
+#### numf() w/ decimal ##
+
+sub numf {
+    my($handle, $num, $decimal_places) = @_;
+    
+    if($num < 10_000_000_000 and $num > -10_000_000_000 and $num == int($num)) {
+        $num += 0;  
+    }
+    elsif(defined $decimal_places && ( $num =~ m{^\d+\.\d+$} || $decimal_places eq '') ) {
+        $num += 0;
+    }
+    else {
+        $num = CORE::sprintf('%G', $num);
+    }
+    while( $num =~ s/^([-+]?\d+)(\d{3})/$1,$2/s ) {1}  # right from perlfaq5
+
+    if (defined $decimal_places && $decimal_places ne '') {
+        no warnings; # Argument "%.3f" isn't numeric in int at
+        my $safe_decimal_places = abs(int($decimal_places));
+        if($safe_decimal_places) {
+            $num =~ s/(^\d{1,}\.\d{$safe_decimal_places})(.*$)/$1/;
+        }
+        elsif($safe_decimal_places eq $decimal_places) {
+            $num =~ s/\.\d+$//;
+        }
+        else {
+            $num = CORE::sprintf($decimal_places, $num);
+        }
+    }
+
+    $num =~ tr<.,><,.> if ref($handle) and $handle->{'numf_comma'};
+    
+    return $num;
+}
+
+#### / numf() w/ decimal/formatter ##
+
+#### range support ##
+
+# DO NOT advertise this yet as it makes the lookup break
+#     key of '[foo,1_.._#]' becomes '[foo,_1,_2, ... _N]' on and on depenending on length of args _N so its dynamic and can;t be in lexicon
+# We could override _compile instead *if* we could get the lenth of the caller's @_ at that point (and rely that core always has @_ filled only with args at that point)
+# it'd be better if it was in Locale::Maketext: rt 37955
+
+sub maketext {
+    my($class, $key, @args) = @_;
+
+    while($key =~ m{(_(\-?\d+).._(\-?\d+|\#))}) {
+        my $rem = $1;
+        my $end = $3 eq '#' ? scalar(@args): $3;
+        my $chg = '';
+        
+        for my $n ($2 .. $end) {
+            next if $n == 0;
+            $chg .= "_$n,"; 
+        }
+
+        $chg =~ s/\,$//;
+
+       Locale::Maketext::DEBUG() and warn "RANGE: $rem -> $chg";
+       
+        $key =~ s{\Q$rem\E}{$chg}g;
+    }
+
+    # if (exists $INC{'utf8.pm'}) {
+    #     utf8::is_utf8($key) or utf8::decode($key)
+    #     for( @args ) {
+    #         utf8::is_utf8($_) or utf8::decode($_);
+    #     }
+    # }
+
+    return Locale::Maketext::maketext($class,$key,@args);
+}
+
+#### /range support ##
+
+#### more BN methods ##
+
+sub join {
+    shift;
+    return CORE::join(shift,@_);
+}
+
+sub list {
+    my $lh = shift;
+    my $com_sep = ', ';
+    my $oxford  = ',';
+    my $def_sep  = '&';
+    
+    if( ref($lh) ) {
+        $com_sep = $lh->{'list_seperator'} if exists $lh->{'list_seperator'};
+        $oxford  = $lh->{'oxford_seperator'} if exists $lh->{'oxford_seperator'};
+        $def_sep = $lh->{'list_default_and'} if exists $lh->{'list_default_and'};
+    }
+    
+    my $sep = shift || $def_sep;
+    return if !@_;
+    
+    if (@_ == 1) {
+        return $_[0];
+    }    
+    elsif(@_ == 2) {
+        return CORE::join(" $sep ", @_);
+    }
+    else {
+        my $last = pop @_;
+        return CORE::join($com_sep,@_) . "$oxford $sep $last";    
+    }
+}
+
+sub datetime {
+	my ($lh, $dta, $str) = @_;
+	require DateTime;		
+    my $dt = !defined $dta      ? DateTime->now()
+           : ref $dta eq 'HASH' ? DateTime->new( %{ $dta } )
+           : $dta =~ m{ \A (\d+ (?: [.] \d+ )? ) (?: [:] (.*) )? \z }xms ? DateTime->from_epoch( 'epoch' => $1, 'time_zone' => ($2 || 'UTC') )
+           : !ref $dta          ? DateTime->now('time_zone' => ($dta || 'UTC'))
+           :                      $dta->clone()
+           ;
+
+    $dt->{'locale'} = DateTime::Locale->load( $lh->language_tag() );
+    my $format = ref $str eq 'CODE' ? $str->( $dt ) : $str;
+    if (defined $format) {
+        if ($dt->{'locale'}->can($format)) {
+            $format = $dt->{'locale'}->$format();
+        }
+    }
+    
+    return $dt->strftime( $format || $dt->{'locale'}->long_date_format() );	
+}
+
+sub format_bytes {
+    shift;
+    require Number::Bytes::Human;
+    return Number::Bytes::Human::format_bytes(@_);
+}
+
+sub convert {
+    shift;
+    require Math::Units;
+    return Math::Units::convert(@_);
+}
+
+#### / more BN methods ##
+
 sub AUTOLOAD {
     my $self = shift;
 	my $type = ref($self) or Carp::croak "$self is not an object";
@@ -345,32 +479,6 @@ This needs done before you call get_handle() or it will have no effect on your o
 Ideally you'd put all calls to this in the main lexicon to ensure it will apply to any get_handle() calls.
 
 Alternatively, and at times more ideally, you can keep each module's aliases in them and then when setting your obj require the module first.
-
-=head1 Special Lexicon keys
-
-These are special keys you're Lexicon will have.
-
-=over 4
-
-=item * -DateTime
-
-This key allows you to add localization to your language object.
-
-    $lang->maketext('-DateTime');
-    $lang->maketext('-DateTime', $datetime); 
-    $lang->maketext('-DateTime', $datetime, $format);
-
-In the example above: 
-
-$datetime could be a L<DateTime> object *or* a hashref of args suitable for DateTime->new(). undefined = DateTime->now()
-
-$format could be a string suitable for DateTime->strftime (Eg '%F %H:%M:%S') *or* a coderef that gets passed a DateTime object and returns a string suitable for DateTime->strftime. undef = L<DateTime::Locale>'s long_date_format()
-
-    sub { $_[0]->{'locale'}->long_datetime_format } # use localized DateTime::Locale format method    
-
-    $lang->maketext('-DateTime', undef, sub { $_[0]->{'locale'}->long_datetime_format } ); # current datetime in format and language of Lexicon's Locale
-
-=back
 
 =head1 METHODS
 
@@ -512,6 +620,178 @@ That way it will continue on to the part below:
 
 If $lh->{'_get_key_from_lookup'} is not a code ref, or $lh->{'_get_key_from_lookup'} returned undef then this method is called with the arguments ($lh, $key, @args) right before the failure handler does its _AUTO wonderfulness.
 
+=head1 numf() decimal length support/sprintf format
+
+numf() will behave exactly the same as it always has except now it take an additional argument.
+
+This additional argument will describe how to handle any decimal or format via sprintf
+
+Normally this is what happens:
+
+    $lh->maketext("pi is [numf,_1]",355/113); #  3.14159
+    
+An empty string value will leave the decimals as they are:
+
+   $lh->maketext("pi is [numf,_1,_2]",355/113,''); #  3.14159292035398
+
+A zero will remove the decimal character and decimal numbers completely.
+
+Any other number will truncate it (without rounding) to the length given
+
+   $lh->maketext("pi is [numf,_1,_2]",355/113,6); # 3.141592
+
+A non-numeric value is used as a sprintf format (which does some rounding)
+
+   $lh->maketext("pi is just under [numf,_1,%.3f]",355/113) # 3.142
+   
+It'd be great if this were the default and I've proposed it at L<http://rt.cpan.org/Ticket/Display.html?id=36136>
+
+=head1 Argument range in bracket notation
+
+Note: this behavior is experimental and should not be used in production  yet. Keep reading if you want to find out why.
+
+If you want to operate on several arguments there are currently only 2 options:
+
+=over 4
+
+=item know the amount of arguments ahead of time
+
+    [method,_2,_3,_4]
+
+=item use all the arguments
+
+    [method,_*]
+
+=back
+
+What if you won't know the length of arguments ahead of time or only want to operate on some, for example with L</list>() or L</join>()?
+
+You'd use this range notation:
+
+   [_1] [method,_2.._4] 
+   
+   [_1] [method,_2.._#]
+   
+   _# is the last item in the list, outside of '..' range notation you have to use _-1 not _#
+
+Like _* 0 is not used so:
+
+   [method,_-1.._#], qw(a b c d) becomes d,a,b,c,d not 'd,OBJ-stringified-from-zero,a,b,c
+   
+Like perl's range operator if both side are the same its a list with 1 item.
+
+   '[_1.._#]', 1,2 becomes '12'
+   
+   '[_1.._#]', 1 becomes '1'
+   
+Also if they are an invalid range you get an empty list
+
+   '[_2.._1]', qw(a b) # no-op just like for(2..1)
+
+This is for proof of concept only as the way it currently happens changes the lookup key which defeats the purpose.
+
+For technical reasons it can not be done easily by overriding one method, it requires changes in the middle of several
+
+It'd be great if this were the default and I've proposed it at L<http://rt.cpan.org/Ticket/Display.html?id=37955>
+
+=head1 Additional bracket notation methods
+
+=head2 join()
+
+Joins the given arguments with the first argument:
+
+  [join,-,_*], @numbers becomes 1-2-3-4-5
+  [join,,_*], @numbers becomes 12345
+  [join,~,,_*], @numbers becomes 1,2,3,4,5
+  [join,~, ,_*], @numbers becomes 1, 2, 3, 4, 5
+
+=head2 list()
+
+Creates a phrased list "and/or" style:
+
+  You chose [list,and,_*], @pals
+  
+  You chose Rhiannon
+  You chose Rhiannon and Parker
+  You chose Rhiannon, Parker, and Char
+  You chose Rhiannon, Parker, Char, and Bean
+
+The 'and' above is by default an '&':
+
+  You chose [list,,_*]
+
+  You chose Rhiannon, Parker, & Char
+
+A locale can set that but I recommend being explicit in your lexicons so the translators will know what you're trying to say:
+
+   [list,and,_*]
+   [list,or,_*]
+
+A locale can also control the seperator and "oxford" comma character (IE empty string for no oxford comma)
+
+The locale can do this by setting some variables in the same manner you'd set 'numf_comma' to 
+change how numf() behaves for a class without having to write an almost identical method.
+
+The variables are (w/ defaults shown):
+
+  $lh->{'list_seperator'}   = ', ';
+  $lh->{'oxford_seperator'} = ',';
+  $lh->{'list_default_and'} = '&';
+
+=head2 datetime()
+
+Allows you to get datetime output formatted for the current locale.
+
+    'Right now it is [datetime]'
+
+It can take 2 arguments which default to DateTime->now and 'long_date_format' respectively.
+
+The first argument  tells the function what point in time you want. The values can be:
+
+=over 4
+
+=item A L<DateTime> object
+
+=item A hashref of arguments suitable for DateTime->new()
+
+=item An epoch suitable for DateTime->from_epoch()'s 'epoch' field.
+
+Uses UTC as the time zone
+
+=item A time zone suitable for L<DateTime> constructors' 'time_zone' field
+
+The current time is used.
+
+Passing it an empty string will result in UTC being used.
+
+=item An epoch and time zone as above joined together by a colon
+
+A colon followed by nothing will result in UTC
+
+=back 
+
+The second tells it what format you'd like that point in time stringified. The values can be:
+
+=item A coderef that returns a string suitable for DateTime->strftime()
+
+=item A string that is the name of a L<DateTime::Locale> method
+
+=item A string suitable for DateTime->strftime()
+
+=back
+
+=head2 format_bytes()
+
+Shortcut to L<Number::Bytes::Human> format_bytes() 
+
+   'You have used [format_bytes,_1] of your alloted space', $bytes
+
+=head2 convert()
+
+Shortcut to L<Math::Units> convert() 
+
+  'The fish was [convert,_1,_2,_3]" long', $feet,'ft','in'
+
 =head1 Project example
 
 Main Class:
@@ -542,6 +822,13 @@ French class:
         'Hello World' => 'Bonjour Monde',
     );
     
+    sub init {
+        my ($lh) = @_;
+        $lh->SUPER::init();
+        $lh->{'numf_comma'} = 1; # Locale::Maketext numf()
+        return $lh;
+    }
+    
     1;
 
 
@@ -568,10 +855,42 @@ and each uses $ENV{'maketext_obj'} if valid or it uses a L<Local::Maketext::Pseu
 
 =back
 
-
 =head1 SEE ALSO
 
 L<Locale::Maketext>, L<Locales::Language>, L<Locale::Maketext::Pseudo>
+
+=head1 TODO
+
+Better drop in modular lexicon support/documentation
+
+Specific support of lexicon management w/ non-hash based lexicons
+
+Add in currently beta datetime_duration() (L<DateTime::Format::Span/LOCALIZATION of DateTime::Format modules> and company)
+
+Add in currently beta currency(), currency_convert()
+
+=for notes to self
+    $amount, $iso4217, $format
+    Identical: we like specifics though...
+    en: [currency,_1] fr: [currency_convert,_1]  #error if no $iso4217 for class
+    en: [currency,_1,USD] fr: [currency_convert,_1,USD]
+    en: [currency,_1,USD] fr: [currency_convert,_1,USD,FRF]
+    en: [currency,_1,USD,FMT_SYMBOL] fr: [currency_convert,_1,USD,FRF,FMT_SYMBOL]
+    my $iso = $_[1] || $_[0]->get_ISO4217();
+    Locale::Currency::Format->can($_[3]);
+    my $format = $_[3] || Locale::Currency::Format::FMT_SYMBOL();
+    return Locale::Currency::Format::curreny_format($iso, $amount, $format) || $Locale::Currency::Format::error;
+    currency_convert($amount, $from, $to, $format); # Finance::Currency::Convert
+
+possibly some formatters (would need to associate an output object of some kind though...)
+
+=for notes for self
+    output_format() ?
+    url()
+    email()
+    strong()
+    emphasize()
+    etc...
 
 =head1 SUGGESTIONS
 

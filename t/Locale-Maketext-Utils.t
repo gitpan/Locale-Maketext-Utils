@@ -1,4 +1,4 @@
-use Test::More tests => 51;
+use Test::More tests => 88;
 BEGIN { use_ok('Locale::Maketext::Utils') };
 
 package TestApp::Localize;
@@ -41,6 +41,16 @@ our $Encoding = 'utf7';
 our %Lexicon = (
     'Hello World' => 'Bonjour Monde',
 );
+
+sub init {
+    my ($lh) = @_;
+    $lh->SUPER::init();
+    $lh->{'numf_comma'} = 1; # Locale::Maketext numf()
+    $lh->{'list_seperator'}   = '. ';
+    $lh->{'oxford_seperator'} = '';
+    $lh->{'list_default_and'} = '&&';
+    return $lh;
+}
 
 package main;
 
@@ -102,6 +112,8 @@ my $fr = TestApp::Localize->get_handle('fr');
 ok($fr->language_tag() eq 'fr', 'get_handle fr');
 ok($fr->get_base_class() eq 'TestApp::Localize', 'get_base_class()');
 ok($fr->fetch('Hello World') eq 'Bonjour Monde', 'fetch() method'); 
+ok($fr->{'numf_comma'} eq '1', 'init set value ok');
+
 # safe to assume print() will work to if fetch() does...
 
 {
@@ -188,16 +200,88 @@ ok( (keys %{ $inc_hr }) == 2
     && exists $inc_hr->{'en'}
     && exists $inc_hr->{'it'}, '@INC names');
 
-# -DateTime
+delete $en->{'_get_key_from_lookup'}; #  don't this anymore
 
-ok( $en->maketext('-DateTime') =~ m{ \A \w+ \s \d+ [,] \s \d+ \z }xms, 'undef 2nd undef 3rd');
-my $dt_obj = DateTime->new('year'=> 1978); # DateTime already brought in by prev -DateTime call
-ok( $en->maketext('-DateTime', $dt_obj)  =~ m{^January 1, 1978$}i, '2nd arg object');
-ok( $en->maketext('-DateTime', {'year'=>1977}, '')  =~ m{^January 1, 1977$}i, '2nd arg hashref');
-ok( $en->maketext('-DateTime', {'year'=>1977}, '%Y') eq '1977', '3nd arg string');
-ok( $en->maketext('-DateTime', {'year'=>1977}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^January 1, 1977 12:00:00 AM .*$}i, '3nd arg coderef');
-ok( $en->maketext('-DateTime', {'year'=>1978, 'month'=>11, 'day'=>13}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^November 13, 1978 12:00:00 AM .*$}i ,'-DateTime English');
-ok( $fr->maketext('-DateTime', {'year'=>1999, 'month'=>7, 'day'=>17}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^17 juillet 1999 00:00:00 .*$}i ,'-DateTime French');
+# datetime
+
+ok( $en->maketext('[datetime]') =~ m{ \A \w+ \s \d+ [,] \s \d+ \z }xms, 'undef 1st undef 2nd');
+my $dt_obj = DateTime->new('year'=> 1978); # DateTime already brought in by prev [datetime] call
+ok( $en->maketext('[datetime,_1]', $dt_obj)  =~ m{^January 1, 1978$}i, '1st arg object');
+ok( $en->maketext('[datetime,_1,_2]', {'year'=>1977}, '')  =~ m{^January 1, 1977$}i, '1st arg hashref');
+ok( $en->maketext('[datetime,_1,_2]', {'year'=>1977}, '%Y') eq '1977', '2nd arg string');
+ok( $en->maketext('[datetime,_1,_2]', {'year'=>1977}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^January 1, 1977 12:00:00 AM .*$}i, '2nd arg coderef');
+ok( $en->maketext('[datetime,_1,_2]', {'year'=>1978, 'month'=>11, 'day'=>13}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^November 13, 1978 12:00:00 AM .*$}i ,'[datetime] English');
+ok( $fr->maketext('[datetime,_1,_2]', {'year'=>1999, 'month'=>7, 'day'=>17}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^17 juillet 1999 00:00:00 .*$}i ,'[datetime] French');
+
+ok( $en->maketext('[datetime,_1,short_datetime_format]', {'year'=>1977} ) eq '1/1/77 12:00 AM', '2nd arg DateTime::Locale method name');
+ok( $en->maketext('[datetime,_1,_2]', {'year'=>1977}, 'invalid' ) eq 'invalid', '2nd arg DateTime::Locale method name invalid');
+
+my $epoch = time;
+my $epoch_utc = DateTime->from_epoch( 'epoch' => $epoch, 'time_zone' => 'UTC');
+ok( $en->maketext('[datetime,_1,%s]','UTC') >= $epoch , '1st arg TZ');
+ok( $en->maketext('[datetime,_1,long_datetime_format]', $epoch) eq $epoch_utc->strftime($epoch_utc->{'locale'}->long_datetime_format), '1st arg Epoch');
+ok( $en->maketext('[datetime,_1,long_datetime_format]',"$epoch:UTC") eq $epoch_utc->strftime($epoch_utc->{'locale'}->long_datetime_format), '1st arg Epoch:TZ');
+
+# numf w/ decimal support 
+
+my $pi = 355/113;
+ok( $en->maketext("pi is [numf,_1]",$pi) eq 'pi is 3.14159', 'default decimal behavior');
+ok( $en->maketext("pi is [numf,_1,_2]",$pi,'') eq 'pi is 3.14159292035398', 'w/ empty');
+ok( $en->maketext("pi is [numf,_1,_2]",$pi,0) eq 'pi is 3', 'w/ zero');
+ok( $en->maketext("pi is [numf,_1,_2]",$pi,6) eq 'pi is 3.141592', 'w/ number');
+ok( $en->maketext("pi is [numf,_1,_2]",$pi,-6) eq 'pi is 3.141592', 'w/ negative');
+ok( $en->maketext("pi is [numf,_1,_2]",$pi,6.2) eq 'pi is 3.141592', 'w/ decimal');
+ok( $en->maketext("pi is [numf,_1,_2]",$pi,'%.3f') eq 'pi is 3.142', 'w/ no numeric');
+
+ok( $en->maketext("pi is [numf,_1,]",$pi) eq 'pi is 3.14159292035398', 'bn: w/ empty');
+ok( $en->maketext("pi is [numf,_1,0]",$pi) eq 'pi is 3', 'bn: w/ zero');
+ok( $en->maketext("pi is [numf,_1,6]",$pi) eq 'pi is 3.141592', 'bn: w/ number');
+ok( $en->maketext("pi is [numf,_1,-6]",$pi) eq 'pi is 3.141592', 'bn: w/ negative');
+ok( $en->maketext("pi is [numf,_1,6.2]",$pi) eq 'pi is 3.141592', 'bn: w/ decimal');
+ok( $en->maketext("pi is [numf,_1,_2]",$pi,'%.3f') eq 'pi is 3.142', 'bn: w/ no numeric');
+
+# range
+
+ok( $en->maketext("[_1] [_2.._#]",1,2,3,4) eq '1 234', 'basic range' );
+ok( $en->maketext("[_2] [_-1.._#]",1,2,3,4) eq '2 41234', 'no zero range' );
+ok( $en->maketext("[_2] [_2.._3] [_4]",1,2,3,4) eq '2 23 4', 'specific range' );
+ok( $en->maketext("[_1] [_2.._#]",1,2) eq '1 2', 'range goes to 1' );
+
+# join
+
+ok( $en->maketext("[join,~,,_*]",1,2,3,4) eq '1,2,3,4', "join all");
+ok( $en->maketext("[join,,_*]",1,2,3,4) eq '1234', "blank sep");
+ok( $en->maketext("[join,_*]",1,2,3,4) eq '21314', "no sep");
+ok( $en->maketext("[join,-,_2,_4]",1,2,3,4) eq '2-4', "join specifc");
+ok( $en->maketext("[join,-,_2.._#]",1,2,3,4) eq '2-3-4', "join range");
+
+# list
+
+ok( $en->maketext("[_1] is [list,and,_2.._#]",qw(a)) eq 'a is ','list no arg');
+ok( $en->maketext("[_1] is [list,and,_2.._#]",qw(a b)) eq 'a is b','list one arg "and" sep');
+ok( $en->maketext("[_1] is [list,&&,_2.._#]",qw(a b c)) eq 'a is b && c','list 2 arg special sep');
+ok( $en->maketext("[_1] is [list,,_2.._#]",qw(a b c d)) eq 'a is b, c, & d','list 3 arg undef sep');
+ok( $en->maketext("[_1] is [list,or,_2.._#]",qw(a b c d e)) eq 'a is b, c, d, or e','list 4 arg "or" sep');
+ok( $en->maketext("[_1] is [list,and,_2.._#]",qw(a b c d e)) eq 'a is b, c, d, and e','list 4 arg "and" sep');
+
+ok( $fr->maketext("[_1] is [list,,_2.._#]",qw(a b c d e)) eq 'a is b. c. d && e','specials set by class');
+
+# convert
+
+SKIP: {
+    eval 'use Math::Units';
+    skip 'Math::Units required for testing convert()', 1 if $@;
+    ok( $en->maketext("[convert,_*]",1,'ft','in') eq '12', 'convert() method');
+};
+
+# format_bytes
+
+SKIP: {
+    eval 'use Number::Bytes::Human';
+    skip 'Number::Bytes::Human required for testing format_bytes()', 1 if $@;
+    ok( $en->maketext("[format_bytes,_*]",1024) eq '1.0K', 'format_bytes() method');
+};
+
 
 # cleanup 
 unlink "$dir/TestApp/Localize/it.pm";

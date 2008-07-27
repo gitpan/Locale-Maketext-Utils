@@ -1,5 +1,11 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.0.12
+    - -DateTime key (and the idea of special keys.. yuck!) dropped, should be bracket method
+    - add example range support (hopefully will be core to avoid the mis-lookup issue) - See rt 37955
+    - numf w/ decimal truncation support (hopefully will be core eventually) - See rt 36136
+    - add datetime(), join(), list(), format_bytes(), convert()
+
 0.0.11  Fri Jul 25 19:19:24 2008
     - make tests work with variations of Locales::Base
 
