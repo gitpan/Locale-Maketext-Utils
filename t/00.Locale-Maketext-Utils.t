@@ -1,5 +1,9 @@
-use Test::More tests => 88;
-BEGIN { use_ok('Locale::Maketext::Utils') };
+use Test::More tests => 124;
+
+BEGIN { 
+   unshift @INC, qw(lib ../lib);
+   use_ok('Locale::Maketext::Utils');
+};
 
 package TestApp::Localize;
 use Locale::Maketext::Utils;
@@ -14,6 +18,11 @@ our %Lexicon = (
 );
 
 __PACKAGE__->make_alias('i_alias1', 1);
+
+sub output_test {
+    my ($lh, $string) = @_;
+    return "TEST $string TEST";
+}
 
 package TestApp::Localize::en;
 use base 'TestApp::Localize';
@@ -69,13 +78,82 @@ package main;
     ok($ENV{'maketext_obj'} ne $noarg, 'ENV maketext_obj_skip_env true');
 }
 
+my $no_arg = TestApp::Localize->get_handle();
+ok(ref($no_arg) eq 'TestApp::Localize::en_us', 'no argument has highest level langtag NS');
+
 my $en = TestApp::Localize->get_handle('en');
 ok($ENV{'maketext_obj'} eq $en, 'ENV maketext_obj_skip_env false');
+
+ok($en->get_language_class() eq 'TestApp::Localize::en', 'get_language_class() obj method');
+ok(TestApp::Localize::fr->get_language_class() eq 'TestApp::Localize::fr', 'get_language_class() class method');
+ok(!defined $en->get_base_class_dir(), 'get_base_class_dir() returns undefined for non .pm based base class');
+ok(!defined $en->list_available_locales(), 'list_available_locales() returns undefined for non .pm based base class');
+
+
+my $has_sub_todo = eval { require Sub::Todo } ? 1 : 0;
+$! = 0; # just to be sure
+ok(!$en->add_lexicon_override_hash('en', 'before', {a=>1}), "add_lexicon_override_hash() returns false with non Tie::Hash::ReadonlyStack compat Lexicon");
+SKIP: {
+    skip "Sub::Todo required to test for 'not implemented' status", 1 if !$has_sub_todo;
+    ok( $! > 0, 'add_lexicon_override_hash() + Sub::Todo sets $! with non Tie::Hash::ReadonlyStack compat Lexicon');
+    $! = 0;
+};
+SKIP: {
+    skip "Sub::Todo must not be installed to test for 'no Sub::Todo not implemented' status", 1 if $has_sub_todo;
+    ok( $! == 0, 'add_lexicon_override_hash() w/ out Sub::Todo does not get $! set with non Tie::Hash::ReadonlyStack compat Lexicon');
+    $! = 0;
+};
+
+ok(!$en->add_lexicon_fallback_hash('en', 'after', {b=>1}), "add_lexcion_fallback_hash() returns false with non Tie::Hash::ReadonlyStack compat Lexicon");
+SKIP: {
+    skip "Sub::Todo required to test for 'not implemented' status", 1 if !$has_sub_todo;
+    ok( $! > 0, 'add_lexicon_fallback_hash() + Sub::Todo sets $! with non Tie::Hash::ReadonlyStack compat Lexicon');
+    $! = 0;
+};
+SKIP: {
+    skip "Sub::Todo must not be installed to test for 'no Sub::Todo not implemented' status", 1 if $has_sub_todo;
+    ok( $! == 0, 'add_lexicon_fallback_hash() w/ out Sub::Todo does not get $! set with non Tie::Hash::ReadonlyStack compat Lexicon');
+    $! = 0;
+};
+
+ok(!$en->del_lexicon_hash('en', 'before'), "del_lexicon_hash() returns false with non Tie::Hash::ReadonlyStack compat Lexicon");
+SKIP: {
+    skip "Sub::Todo required to test for 'not implemented' status", 1 if !$has_sub_todo;
+    ok( $! > 0, 'del_lexicon_hash() + Sub::Todo sets $! with non Tie::Hash::ReadonlyStack compat Lexicon');
+    $! = 0;
+};
+SKIP: {
+    skip "Sub::Todo must not be installed to test for 'no Sub::Todo not implemented' status", 1 if $has_sub_todo;
+    ok( $! == 0, 'del_lexicon_hash() w/ out Sub::Todo does not get $! set with non Tie::Hash::ReadonlyStack compat Lexicon');
+    $! = 0;
+};
+
+ok(!$en->del_lexicon_hash('*', 'after'), "del_lexicon_hash() returns false w/ * even with non Tie::Hash::ReadonlyStack compat Lexicon");
+SKIP: {
+    skip "Sub::Todo required to test for 'not implemented' status", 1 if !$has_sub_todo;
+    ok( $! > 0, 'del_lexicon_hash() + Sub::Todo sets $! with non Tie::Hash::ReadonlyStack compat Lexicon');
+    $! = 0;
+};
+SKIP: {
+    skip "Sub::Todo must not be installed to test for 'no Sub::Todo not implemented' status", 1 if $has_sub_todo;
+    ok( $! == 0, 'del_lexicon_hash() + * w/ out Sub::Todo does not get $! set with non Tie::Hash::ReadonlyStack compat Lexicon');
+    $! = 0;
+};
 
 ok($en->language_tag() eq 'en', 'get_handle en');
 ok($en->langtag_is_loadable('invalid') eq '0', 'langtag_is_loadable() w/ unloadable tag');
 ok(ref $en->langtag_is_loadable('fr') eq 'TestApp::Localize::fr', 
    'langtag_is_loadable() w/ loadable tag');
+
+my $is_singleton = TestApp::Localize->get_handle('en');
+ok($en eq $is_singleton, 'same args result in singleton behavior');
+
+my $one = TestApp::Localize->get_handle('en','fr');
+my $two = TestApp::Localize->get_handle('en','fr');
+my $three = TestApp::Localize->get_handle('fr', 'en');
+
+ok($one eq $two, 'singleton same order is the same obj');
+ok($two ne $three, 'singleton different order is not the same obj');
 
 ok($en->encoding() eq 'utf8', 'base $Encoding');   
 $en->{'_get_key_from_lookup'} = sub {
@@ -89,10 +167,13 @@ $bad->{'_log_phantom_key'} = sub {
     $ENV{'_log_phantum_key'} = 'done';    
 };
 ok($bad->maketext('Not in Lexicon') eq 'Not in Lexicon'
-   && $ENV{'_log_phantum_key'} eq'done', '_log_phantom_key');
+   && $ENV{'_log_phantum_key'} eq 'done', '_log_phantom_key');
 
 my $oneside = TestApp::Localize->get_handle('i_oneside');
-ok($TestApp::Localize::i_oneside::Lexicon{'One Side'} eq 'One Side', '$Onesided');
+
+ok($TestApp::Localize::i_oneside::Lexicon{'One Side'} eq '', '$Onesided untouched initially');
+ok($oneside->maketext('One Side') eq 'One Side', 'Once used $Onesided returns proper value');
+ok(ref $TestApp::Localize::i_oneside::Lexicon{'One Side'} eq 'SCALAR', 'Once used $Onesided does lexicon (sanity check that it is not just falling back)');
 
 my $alias1 = TestApp::Localize->get_handle('i_alias1');
 ok($alias1->get_language_tag() eq 'i_alias1', '$Aliaspkg w/ string');
@@ -122,15 +203,27 @@ ok($fr->{'numf_comma'} eq '1', 'init set value ok');
     # safe to assume say() will work to if get() does...
 }
 
-## test AUTOLOAD:
-ok($fr->fetch_p('Hello World') eq '<p>Bonjour Monde</p>', 'AUTOLOAD tag');
-ok($fr->fetch_p_open('Hello World') eq '<p>Bonjour Monde', 'AUTOLOAD tag open');
-ok($fr->fetch_p_close('Hello World') eq 'Bonjour Monde</p>', 'AUTOLOAD tag close');
-
-ok($fr->fetch_p_err('Hello World') eq '<p class="err">Bonjour Monde</p>', 'AUTOLOAD tag class');
-ok($fr->fetch_p_err_open('Hello World') eq '<p class="err">Bonjour Monde', 'AUTOLOAD tag class open');
-ok($fr->fetch_p_err_close('Hello World') eq 'Bonjour Monde</p>', 'AUTOLOAD tag class close');
-# end AUTOLOAD tests
+# this was a bad bad experimental idea (which is why it was undocumented and finally removed in 0.13)
+# ## test AUTOLOAD:
+# ok($fr->fetch_p('Hello World') eq '<p>Bonjour Monde</p>', 'AUTOLOAD tag');
+# ok($fr->fetch_p_open('Hello World') eq '<p>Bonjour Monde', 'AUTOLOAD tag open');
+# ok($fr->fetch_p_close('Hello World') eq 'Bonjour Monde</p>', 'AUTOLOAD tag close');
+# 
+# ok($fr->fetch_p_err('Hello World') eq '<p class="err">Bonjour Monde</p>', 'AUTOLOAD tag class');
+# ok($fr->fetch_p_err_open('Hello World') eq '<p class="err">Bonjour Monde', 'AUTOLOAD tag class open');
+# ok($fr->fetch_p_err_close('Hello World') eq 'Bonjour Monde</p>', 'AUTOLOAD tag class close');
+# ok(!$fr->mistyped_non_existant_no_args(), 'AUTOLOAD no-arg not fatal'); # what about mistyped ones that do have args, yikes...
+# SKIP: {
+#     skip "Sub::Todo required to test for 'not implemented' status", 1 if !$has_sub_todo;
+#     ok( $! > 0, 'AUTOLOAD mistyped_non_existant_no_args() + Sub::Todo sets $! with non Tie::Hash::ReadonlyStack compat Lexicon');
+#     $! = 0;
+# };
+# SKIP: {
+#     skip "Sub::Todo must not be installed to test for 'no Sub::Todo not implemented' status", 1 if $has_sub_todo;
+#     ok( $! == 0, 'AUTOLOAD mistyped_non_existant_no_args() w/ out Sub::Todo does not get $! set with non Tie::Hash::ReadonlyStack compat Lexicon');
+#     $! = 0;
+# };
+# # end AUTOLOAD tests
 
 ok($fr->encoding() eq 'utf7', 'class $Encoding'); 
 ok($fr->fetch('Fallback') eq 'Fallback orig', 'fallback  behavior');
@@ -153,6 +246,24 @@ ok($fr_hr->{'en'} eq 'Anglais', 'names default');
 ok($fr_hr->{'en-uk'} eq 'Anglais (UK)', 'names suffix');
 ok($fr_hr->{'it'} eq 'Italien', 'names normal');
 ok($fr_hr->{'xxyyzz'} eq 'xxyyzz', 'names fake');
+
+my $sig_warn = exists $SIG{__WARN__} && defined $SIG{__WARN__} ? $SIG{__WARN__} : 'no exists/defined';
+my $base_sig_warn = exists $Locales::Base::SIG{__WARN__} && defined $Locales::Base::SIG{__WARN__} ? $Locales::Base::SIG{__WARN__} : 'no exists/defined';
+my ($loc_hr, $nat_hr) = $fr->lang_names_hashref('en-uk', 'it', 'xxyyzz');
+my $sig_warn_aft = exists $SIG{__WARN__} && defined $SIG{__WARN__} ? $SIG{__WARN__} : 'no exists/defined';
+my $base_sig_warn_aft = exists $Locales::Base::SIG{__WARN__} && defined $Locales::Base::SIG{__WARN__} ? $Locales::Base::SIG{__WARN__} : 'no exists/defined';
+ok($sig_warn eq $sig_warn_aft, 'main sig warn unchanged by lang_names_hashref()');
+ok($base_sig_warn eq $base_sig_warn_aft, 'locale::base sig warn unchanged by lang_names_hashref()');
+
+ok($loc_hr->{'en'} eq 'Anglais', 'array context handle locale names default');
+ok($loc_hr->{'en-uk'} eq 'Anglais (UK)', 'array context handle locale names suffix');
+ok($loc_hr->{'it'} eq 'Italien', 'array context handle locale names normal');
+ok($loc_hr->{'xxyyzz'} eq 'xxyyzz', 'array context handle locale  names fake');
+
+ok($nat_hr->{'en'} eq 'English', 'array context native names default');
+ok($nat_hr->{'en-uk'} eq 'English (UK)', 'array context native names suffix');
+ok($nat_hr->{'it'} eq 'Italian', 'array context native names normal');
+ok($nat_hr->{'xxyyzz'} eq 'xxyyzz', 'array context native names fake');
 
 my $loadable_hr = $fr->loadable_lang_names_hashref('en-uk', 'it', 'xxyyzz', 'fr');
 
@@ -265,6 +376,31 @@ ok( $en->maketext("[_1] is [list,or,_2.._#]",qw(a b c d e)) eq 'a is b, c, d, or
 ok( $en->maketext("[_1] is [list,and,_2.._#]",qw(a b c d e)) eq 'a is b, c, d, and e','list 4 arg "and" sep');
 
 ok( $fr->maketext("[_1] is [list,,_2.._#]",qw(a b c d e)) eq 'a is b. c. d && e','specials set by class');
+
+# boolean
+
+ok($en->maketext('boolean [boolean,_1,true,false] x',1) eq 'boolean true x', 'boolean 2 arg true');
+ok($en->maketext('boolean [boolean,_1,true,false] x',0) eq 'boolean false x', 'boolean 2 arg false');
+ok($en->maketext('boolean [boolean,_1,true,false] x',undef) eq 'boolean false x', 'boolean 2 arg undef');
+ok($en->maketext('boolean [boolean,_1,true,false,null] x',1) eq 'boolean true x', 'boolean 3 arg true');
+ok($en->maketext('boolean [boolean,_1,true,false,null] x',0) eq 'boolean false x', 'boolean 3 arg false');
+ok($en->maketext('boolean [boolean,_1,true,false,null] x',undef) eq 'boolean null x', 'boolean 3 arg undef');
+
+# output 
+
+ok($en->maketext('hello [output,test,hello world]') eq 'hello TEST hello world TEST', "output() with existing function");
+ok($en->maketext('hello [output,notexists,hello world]') eq 'hello hello world', "output() with non existant function");
+
+SKIP: {
+    skip "Sub::Todo required to test for 'not implemented' status", 1 if !$has_sub_todo;
+    ok( $! > 0, 'output() with non existant function + Sub::Todo sets $!');
+    $! = 0;
+};
+SKIP: {
+    skip "Sub::Todo must not be installed to test for 'no Sub::Todo not implemented' status", 1 if $has_sub_todo;
+    ok( $! == 0, 'output() with non existant function w/ out Sub::Todo does not get $! set');
+    $! = 0;
+};
 
 # convert
 

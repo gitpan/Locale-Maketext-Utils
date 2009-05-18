@@ -1,5 +1,27 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.13  Sat May 16 20:21:57 2009
+    - drop 'use version'
+    - 'use base' to @ISA
+    - POD to .pod file
+    - removed undocumented, experimental, and ultimately a bad idea AUTOLOAD tag behavior
+    - get_handle() is now an argument based singleton
+    - POD removed items from TODO that were done in this version (noted below)
+    - $Onesided will now be lookup-on-demand-lexicon safe (part of the todo 'Specific support of lexicon management w/ non-hash based lexicons')
+    - added bracket notation methods
+        boolean()
+        output() - (part of the todo 'possibly some formatters (would need to associate an output object of some kind though...)')
+    - added utility methods:
+        get_language_class()        
+        add_lexicon_override_hash() - "Tie::Hash::ReadonlyStack compat Lexicon only" (part of the todo 'Specific support of lexicon management w/ non-hash based lexicons')
+        add_lexcion_fallback_hash() - "Tie::Hash::ReadonlyStack compat Lexicon only" (part of the todo 'Specific support of lexicon management w/ non-hash based lexicons')
+        del_lexicon_hash()          - "Tie::Hash::ReadonlyStack compat Lexicon only" (part of the todo 'Specific support of lexicon management w/ non-hash based lexicons')
+        get_base_class_dir()     - "Standard .pm layout only" (part of the todo 'Better drop in modular lexicon support/documentation')
+        list_available_locales() - "Standard .pm layout only" (part of the todo 'Better drop in modular lexicon support/documentation')
+    - POD 'Tie::Hash::ReadonlyStack compat Lexicon' (part of the todo 'Specific support of lexicon management w/ non-hash based lexicons')
+    - POD "Standard" .pm layout (part of the todo 'Better drop in modular lexicon support/documentation')
+    - added "native" name lookup hash to lang_names_hashref() in array context
+
 0.0.12
     - -DateTime key (and the idea of special keys.. yuck!) dropped, should be bracket method
     - add example range support (hopefully will be core to avoid the mis-lookup issue) - See rt 37955

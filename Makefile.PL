@@ -12,6 +12,6 @@ WriteMakefile(
         'DateTime'          => 0,
     },
     ($] >= 5.005 ?   
-      (ABSTRACT_FROM  => 'lib/Locale/Maketext/Utils.pm', 
+      (ABSTRACT_FROM  => 'lib/Locale/Maketext/Utils.pod', 
        AUTHOR         => 'Daniel Muey, L<http://drmuey.com/cpan_contact.pl>') : ()),
 );

@@ -2,6 +2,15 @@ Changes
 Makefile.PL
 MANIFEST
 README
-t/Locale-Maketext-Utils.t
+t/00.Locale-Maketext-Utils.t
+t/01.standard_pm_file_layout.t
+t/02.tie_hash_readonlystack.t
+t/03.default_output_functions.t
+t/lib/MyTestLocale.pm
+t/lib/MyTestLocale/es.pm
+t/lib/MyTestLocale/fr.pm
+t/lib/MyTestLocale/Utils.pm
+t/lib/MyTestLocale/Utils/MIsc.pm
 lib/Locale/Maketext/Utils.pm
+lib/Locale/Maketext/Utils.pod
 META.yml                                 Module meta-data (added by MakeMaker)
