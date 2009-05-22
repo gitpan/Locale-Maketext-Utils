@@ -1,5 +1,12 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.14  Tue May 19 23:11:55 2009
+    - Makefile.PL PREREQ_PM Locales::Base 0.03 and removed version.pm
+    - make_alias() base to @ISA and also include aliasing %Lexicon, $VERSION, $Onesided
+    - fixed scoping of a test that caused issues in later tests on some systems
+    - added notes in POD about Locales::Language 0.03
+    - Address eval {} setting $! spuriously-for-our-purposes
+    
 0.13  Sat May 16 20:21:57 2009
     - drop 'use version'
     - 'use base' to @ISA

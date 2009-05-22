@@ -156,10 +156,13 @@ ok($one eq $two, 'singleton same order is the same obj');
 ok($two ne $three, 'singleton different order is not the same obj');
 
 ok($en->encoding() eq 'utf8', 'base $Encoding');   
-$en->{'_get_key_from_lookup'} = sub {
-     return 'look up version';
-};
-ok($en->maketext('Needs looked up') eq 'look up version', '_get_key_from_lookup');
+
+{
+   local $en->{'_get_key_from_lookup'} = sub {
+       return 'look up version';
+   };
+   ok($en->maketext('Needs looked up') eq 'look up version', '_get_key_from_lookup');
+}
 
 my $bad = TestApp::Localize->get_handle('bad');
 ok($bad->language_tag() eq 'en', 'invalid get_handle arg');
@@ -389,6 +392,7 @@ ok($en->maketext('boolean [boolean,_1,true,false,null] x',undef) eq 'boolean nul
 # output 
 
 ok($en->maketext('hello [output,test,hello world]') eq 'hello TEST hello world TEST', "output() with existing function");
+$! = 0;
 ok($en->maketext('hello [output,notexists,hello world]') eq 'hello hello world', "output() with non existant function");
 
 SKIP: {

@@ -5,9 +5,8 @@ WriteMakefile(
     VERSION_FROM      => 'lib/Locale/Maketext/Utils.pm', 
     PREREQ_PM         => {
         'Locale::Maketext'  => 0,
-        'version'           => 0,
         'File::Slurp'       => 0,
-        'Locales::Language' => 0,
+        'Locales::Base'     => 0.03,
         'Locale::Maketext::Pseudo' => 0,
         'DateTime'          => 0,
     },

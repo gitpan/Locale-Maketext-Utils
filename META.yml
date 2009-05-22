@@ -1,25 +1,15 @@
---- #YAML:1.0
-name:               Locale-Maketext-Utils
-version:            0.13
-abstract:           Adds some utility functionality and failure handling to Local::Maketext handles
-author:
-    - Daniel Muey, L<http://drmuey.com/cpan_contact.pl>
-license:            unknown
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         Locale-Maketext-Utils
+version:      0.14
+version_from: lib/Locale/Maketext/Utils.pm
+installdirs:  site
 requires:
-    DateTime:             0
-    File::Slurp:          0
-    Locale::Maketext:     0
-    Locale::Maketext::Pseudo:  0
-    Locales::Language:    0
-    version:              0
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.48
-meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+    DateTime:                      0
+    File::Slurp:                   0
+    Locale::Maketext:              0
+    Locale::Maketext::Pseudo:      0
+    Locales::Base:                 0.03
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.30

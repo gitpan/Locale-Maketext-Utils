@@ -138,7 +138,7 @@ It can be called several ways:
 
 =back
 
-The module it uses for lookup (L<Locales::Language>) is only required when this method is called.
+The module it uses for lookup (L<Locales::Language>) is only required when this method is called. Make sure you have the latest verison of L<Locales> as 0.04 (i.e. L<Locales::Base> 0.03) is buggy!
 
 The module it uses for lookup (L<Locales::Language>) is currently limited to two character codes but we try to handle it gracefully here.
 
@@ -687,7 +687,7 @@ Uses L<Tie::Hash::ReadonlyStack/del_lookup_hash()> under the hood.
 
 $ENV{'maketext_obj'} gets set to the language object on initialization ( for functions to use, see "FUNCTIONS" below ) unless $ENV{'maketext_obj_skip_env'} is true
 
-=head1 FUNCTIONS
+=head2 FUNCTIONS
 
 All are exportable, each takes the same args as the method of the same name (sans 'env_') 
 and each uses $ENV{'maketext_obj'} if valid or it uses a L<Local::Maketext::Pseudo> object.
@@ -710,6 +710,8 @@ and each uses $ENV{'maketext_obj'} if valid or it uses a L<Local::Maketext::Pseu
 
 L<Locale::Maketext>, L<Locales::Language>, L<Locale::Maketext::Pseudo>
 
+If you use L</$lh->lang_names_hashref()> or L</$lh->loadable_lang_names_hashref()> make sure you have the latest verison of L<Locales> as 0.04 (i.e. L<Locales::Base> 0.03) is buggy!
+
 =head1 TODO
 
 Add in currently beta datetime_duration() (L<DateTime::Format::Span/LOCALIZATION of DateTime::Format modules> and company)
@@ -728,14 +730,6 @@ Add in currently beta currency(), currency_convert()
     my $format = $_[3] || Locale::Currency::Format::FMT_SYMBOL();
     return Locale::Currency::Format::curreny_format($iso, $amount, $format) || $Locale::Currency::Format::error;
     currency_convert($amount, $from, $to, $format); # Finance::Currency::Convert
-
-=for notes for self
-    output_format() ?
-    url()
-    email()
-    strong()
-    emphasize()
-    etc...
 
 =head1 SUGGESTIONS
 

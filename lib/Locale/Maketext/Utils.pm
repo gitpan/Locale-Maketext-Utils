@@ -2,7 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-$Locale::Maketext::Utils::VERSION = '0.13';
+$Locale::Maketext::Utils::VERSION = '0.14';
 
 use Locale::Maketext;
 use Locale::Maketext::Pseudo;
@@ -100,7 +100,11 @@ sub make_alias {
 
     for my $pkg ( ref $pkgs ? @{$pkgs} : $pkgs ) {
         next if $pkg !~ m{ \A \w+ (::\w+)* \z }xms;
-        eval qq{package $base\:\:$pkg;use base '$ns';package $ns;};
+        no strict 'refs';
+        *{ $base .'::' . $pkg .'::VERSION' }  = *{ $ns . '::VERSION'};
+        *{ $base .'::' . $pkg .'::Onesided' } = *{ $ns . '::Onesided'};
+        *{ $base .'::' . $pkg .'::Lexicon' }  = *{ $ns . '::Lexicon'};
+        @{ $base .'::' . $pkg .'::ISA' }      = ($ns);
     }
 }
 
@@ -205,6 +209,7 @@ sub lang_names_hashref {
     }
 
     require Locales::Language;    # only needed here, so we don't use() it
+    
     local $Locales::Base::SIG{__WARN__} = sub { };    # stifle copious and useless-for-our-purposes warn()'s ...
 
     my $obj_two_char = substr( $lh->language_tag(), 0, 2 );    # Locales::Language only does two char ...
@@ -268,10 +273,12 @@ sub add_lexicon_override_hash {
         }
     }
 
+    my $cur_errno = $!;
     if ( eval { require Sub::Todo } ) {
         goto &Sub::Todo::todo;
     }
-    else {
+    else { 
+        $! = $cur_errno; 
         return;
     }
 }
@@ -293,10 +300,12 @@ sub add_lexicon_fallback_hash {
         }
     }
 
+    my $cur_errno = $!;
     if ( eval { require Sub::Todo } ) {
         goto &Sub::Todo::todo;
     }
     else {
+        $! = $cur_errno;
         return;
     }
 }
@@ -326,10 +335,12 @@ sub del_lexicon_hash {
 
         return 1 if $count;
 
+        my $cur_errno = $!;
         if ( eval { require Sub::Todo } ) {
             goto &Sub::Todo::todo;
         }
         else {
+            $! = $cur_errno;
             return;
         }
     }
@@ -343,10 +354,12 @@ sub del_lexicon_hash {
             }
         }
 
+        my $cur_errno = $!;
         if ( eval { require Sub::Todo } ) {
             goto &Sub::Todo::todo;
         }
         else {
+            $! = $cur_errno;
             return;
         }
     }
@@ -594,8 +607,12 @@ sub output {
         return $cr->( $lh, $string, @output_function_args );
     }
     else {
+        my $cur_errno = $!;
         if ( eval { require Sub::Todo } ) {
             $! = Sub::Todo::get_errno_func_not_impl();
+        }
+        else {
+            $! = $cur_errno; 
         }
         return $string;
     }
