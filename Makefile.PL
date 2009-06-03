@@ -7,7 +7,6 @@ WriteMakefile(
         'Locale::Maketext'  => 0,
         'File::Slurp'       => 0,
         'Locales::Base'     => 0.03,
-        'Locale::Maketext::Pseudo' => 0,
         'DateTime'          => 0,
     },
     ($] >= 5.005 ?   

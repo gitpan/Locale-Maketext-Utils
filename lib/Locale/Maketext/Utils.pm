@@ -2,33 +2,10 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-$Locale::Maketext::Utils::VERSION = '0.14';
+$Locale::Maketext::Utils::VERSION = '0.15';
 
 use Locale::Maketext;
-use Locale::Maketext::Pseudo;
 @Locale::Maketext::Utils::ISA = qw(Locale::Maketext);
-
-@Locale::Maketext::Utils::EXPORT_OK = qw(env_maketext env_print env_fetch env_say env_get);
-
-sub env_maketext {
-    goto &Locale::Maketext::Pseudo::env_maketext;
-}
-
-sub env_print {
-    goto &Locale::Maketext::Pseudo::env_print;
-}
-
-sub env_fetch {
-    goto &Locale::Maketext::Pseudo::env_fetch;
-}
-
-sub env_say {
-    goto &Locale::Maketext::Pseudo::env_say;
-}
-
-sub env_get {
-    goto &Locale::Maketext::Pseudo::env_get;
-}
 
 my %singleton_stash = ();
 

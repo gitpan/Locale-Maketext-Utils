@@ -689,22 +689,13 @@ $ENV{'maketext_obj'} gets set to the language object on initialization ( for fun
 
 =head2 FUNCTIONS
 
-All are exportable, each takes the same args as the method of the same name (sans 'env_') 
-and each uses $ENV{'maketext_obj'} if valid or it uses a L<Local::Maketext::Pseudo> object.
+L<Locale::Maketext::Pseudo> has some exportable functions that make use of $ENV{'maketext_obj'} to do things like:
 
-=over 4
-
-=item env_maketext()
-
-=item env_fetch()
-
-=item env_print()
-
-=item env_get()
-
-=item env_say()
-
-=back
+    use Locale::Maketext::Pseudo qw(env_maketext);
+    
+    ...
+    
+    env_maketext("Hello, my name is [_1]", $name); # use real object if we have one otherwise use pseudo object
 
 =head1 SEE ALSO
 

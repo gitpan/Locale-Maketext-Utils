@@ -1,5 +1,13 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.15  Wed Jun  3 16:01:29 2009
+    - Dropped need for Locale::Maketext::Pseudo
+    - removed env_ functions (use Locale::Maketext::Pseudo explicitly if you want them)
+      - note: exporting was broken so they were always called w/ full NS if they were used, should facilitate fast search/replace resolution of code using it.
+              if you used these functions you will need to:
+                 a) make sure you $script uses Locale::Maketext::Pseudo
+                 b) perl -pi -e 's/Locale::Maketext::Utils::env_/Locale::Maketext::Pseudo::env_/g' $script
+
 0.14  Tue May 19 23:11:55 2009
     - Makefile.PL PREREQ_PM Locales::Base 0.03 and removed version.pm
     - make_alias() base to @ISA and also include aliasing %Lexicon, $VERSION, $Onesided
