@@ -2,7 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-$Locale::Maketext::Utils::VERSION = '0.15';
+$Locale::Maketext::Utils::VERSION = '0.16';
 
 use Locale::Maketext;
 @Locale::Maketext::Utils::ISA = qw(Locale::Maketext);
@@ -32,11 +32,10 @@ sub init {
 
     $lh->SUPER::init();
     $lh->remove_key_from_lexicons('_AUTO');
-
+    
     # use the base class if available, then the class itself if available
+    no strict 'refs';
     for my $ns ( $lh->get_base_class(), $lh->get_language_class() ) {
-        no strict 'refs';
-
         if ( defined ${ $ns . '::Encoding' } ) {
             $lh->{'encoding'} = ${ $ns . '::Encoding' } if ${ $ns . '::Encoding' };
         }
@@ -75,9 +74,9 @@ sub make_alias {
     return if $ns !~ m{ \A \w+ (::\w+)* \z }xms;
     my $base = $is_base_class ? $ns : $lh->get_base_class();
 
+    no strict 'refs';
     for my $pkg ( ref $pkgs ? @{$pkgs} : $pkgs ) {
         next if $pkg !~ m{ \A \w+ (::\w+)* \z }xms;
-        no strict 'refs';
         *{ $base .'::' . $pkg .'::VERSION' }  = *{ $ns . '::VERSION'};
         *{ $base .'::' . $pkg .'::Onesided' } = *{ $ns . '::Onesided'};
         *{ $base .'::' . $pkg .'::Lexicon' }  = *{ $ns . '::Lexicon'};
@@ -444,7 +443,7 @@ sub numf {
 #### range support ##
 
 # DO NOT advertise this yet as it makes the lookup break
-#     key of '[foo,1_.._#]' becomes '[foo,_1,_2, ... _N]' on and on depenending on length of args _N so its dynamic and can;t be in lexicon
+#     key of '[foo,1_.._#]' becomes '[foo,_1,_2, ... _N]' on and on depending on length of args _N so its dynamic and can't be in lexicon
 # We could override _compile instead *if* we could get the lenth of the caller's @_ at that point (and rely that core always has @_ filled only with args at that point)
 # it'd be better if it was in Locale::Maketext: rt 37955
 
@@ -475,7 +474,7 @@ sub maketext {
     #     }
     # }
 
-    my $value = Locale::Maketext::maketext( $class, $key, @args );
+    my $value = __maketext( $class, $key, @args );
 
     # it'd be better if $Onesided support was in Locale::Maketext: rt 46051
     if ( !defined $value || $value eq '' ) {
@@ -487,7 +486,7 @@ sub maketext {
                 if ( ${ $ns . '::Onesided' } ) {
                     my $lex_ref = \%{ $ns . '::Lexicon' };
                     $lex_ref->{$key} = $key;
-                    return Locale::Maketext::maketext( $class, $key, @args );
+                    return __maketext( $class, $key, @args );
                 }
             }
         }
@@ -497,6 +496,110 @@ sub maketext {
 }
 
 #### /range support ##
+
+###########################################################################
+## L::M::maketext() 1.13
+## UNDO once https://rt.cpan.org/Ticket/Display.html?id=46738 is done ##
+
+require Carp;
+my %isa_scan;
+
+sub __maketext {
+    # Remember, this can fail.  Failure is controllable many ways.
+    Carp::croak 'maketext requires at least one parameter' unless @_ > 1;
+
+    my($handle, $phrase) = splice(@_,0,2);
+    Carp::confess('No handle/phrase') unless (defined($handle) && defined($phrase));
+
+    # Don't interefere with $@ in case that's being interpolated into the msg.
+    local $@;
+
+    # Look up the value:
+    my $value;
+    if (exists $handle->{'_external_lex_cache'}{$phrase}) {
+        Locale::Maketext::DEBUG and warn "* Using external lex cache version of \"$phrase\"\n";
+        $value = $handle->{'_external_lex_cache'}{$phrase};
+    }
+    else {
+        foreach my $h_r (
+            @{  $isa_scan{ref($handle) || $handle} || $handle->_lex_refs  }
+        ) {        
+            Locale::Maketext::DEBUG and warn "* Looking up \"$phrase\" in $h_r\n";
+            if(exists $h_r->{$phrase}) {
+                Locale::Maketext::DEBUG and warn "  Found \"$phrase\" in $h_r\n";
+                unless(ref($value = $h_r->{$phrase})) {
+                    # Nonref means it's not yet compiled.  Compile and replace.
+                    if ($handle->{'use_external_lex_cache'}) {
+                        $value = $handle->{'_external_lex_cache'}{$phrase} = $handle->_compile($value);
+                    }
+                    else {
+                        $value = $h_r->{$phrase} = $handle->_compile($value);
+                    }
+                }
+                last;
+            }
+            elsif($phrase !~ m/^_/s and $h_r->{'_AUTO'}) {
+                # it's an auto lex, and this is an autoable key!
+                Locale::Maketext::DEBUG and warn "  Automaking \"$phrase\" into $h_r\n";
+                if ($handle->{'use_external_lex_cache'}) {
+                    $value = $handle->{'_external_lex_cache'}{$phrase} = $handle->_compile($phrase);
+                }
+                else {
+                    $value = $h_r->{$phrase} = $handle->_compile($phrase);
+                }
+                last;
+            }
+            Locale::Maketext::DEBUG>1 and print "  Not found in $h_r, nor automakable\n";
+            # else keep looking
+        }
+    }
+
+    unless(defined($value)) {
+        Locale::Maketext::DEBUG and warn "! Lookup of \"$phrase\" in/under ", ref($handle) || $handle, " fails.\n";
+        if(ref($handle) and $handle->{'fail'}) {
+            Locale::Maketext::DEBUG and warn "WARNING0: maketext fails looking for <$phrase>\n";
+            my $fail;
+            if(ref($fail = $handle->{'fail'}) eq 'CODE') { # it's a sub reference
+                return &{$fail}($handle, $phrase, @_);
+                # If it ever returns, it should return a good value.
+            }
+            else { # It's a method name
+                return $handle->$fail($phrase, @_);
+                # If it ever returns, it should return a good value.
+            }
+        }
+        else {
+            # All we know how to do is this;
+            Carp::croak("maketext doesn't know how to say:\n$phrase\nas needed");
+        }
+    }
+
+    return $$value if ref($value) eq 'SCALAR';
+    return $value unless ref($value) eq 'CODE';
+
+    {
+        local $SIG{'__DIE__'};
+        eval { $value = &$value($handle, @_) };
+    }
+    # If we make it here, there was an exception thrown in the
+    #  call to $value, and so scream:
+    if ($@) {
+        my $err = $@;
+        # pretty up the error message
+        $err =~ s{\s+at\s+\(eval\s+\d+\)\s+line\s+(\d+)\.?\n?}
+                 {\n in bracket code [compiled line $1],}s;
+        #$err =~ s/\n?$/\n/s;
+        Carp::croak "Error in maketexting \"$phrase\":\n$err as used";
+        # Rather unexpected, but suppose that the sub tried calling
+        # a method that didn't exist.
+    }
+    else {
+        return $value;
+    }
+}
+
+## /L::M 1.13
+###########################################################################
 
 #### more BN methods ##
 

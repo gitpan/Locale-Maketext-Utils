@@ -184,7 +184,6 @@ my $alias2 = TestApp::Localize->get_handle('i_alias2');
 ok($alias2->get_language_tag() eq 'i_alias2', '$Aliaspkg w/ array ref 1');
 my $alias3 = TestApp::Localize->get_handle('i_alias3');
 ok($alias3->get_language_tag() eq 'i_alias3', '$Aliaspkg w/ array ref 2');
-
 ok($alias1->fetch('One Side') eq 'I am not one sides', 'Base class make_alias');
 ok($alias2->fetch('One Side') eq 'One Side', 'Extended class make_alias');
 

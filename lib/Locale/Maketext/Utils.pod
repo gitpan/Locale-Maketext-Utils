@@ -50,6 +50,16 @@ You just do:
 The advantages are a smaller file, less prone to mistyping or mispasting, and 
 most important of all someone translating it can simply copy it into their module and enter their translation instead of having to remove the value first.   
 
+=head1 Lexicon hashes that are "read only"
+
+Sometimes you want your lexicon to be a tied hash that is read only which would be fatal when storing a compiled key's value (e.g. L<GDBM_File>).
+
+To faciltate that (without needing other special tie()s as per L</"Tie::Hash::ReadonlyStack compat Lexicon">) you can simply init() your handle with:
+
+  $lh->{'use_external_lex_cache'} = 1;
+
+That will cause all compiled strings to be stored in the object instead of back in the lexicon.
+
 =head1 Aliasing
 
 In your package you can create an alias with this:

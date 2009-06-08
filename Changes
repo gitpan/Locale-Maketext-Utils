@@ -1,5 +1,10 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.16  Mon Jun  8 10:08:03 2009
+    - move all no()s outside of loops
+    - add support for use_external_lex_cache (see Locale::Maketext's https://rt.cpan.org/Ticket/Display.html?id=46738 )
+    - change test's BAILOUT to SKIP to avoid false failures
+    
 0.15  Wed Jun  3 16:01:29 2009
     - Dropped need for Locale::Maketext::Pseudo
     - removed env_ functions (use Locale::Maketext::Pseudo explicitly if you want them)
