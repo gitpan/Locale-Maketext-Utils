@@ -1,5 +1,9 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.17  Tue Jun  9 10:24:54 2009
+    - $Onesided-ness respect 'use_external_lex_cache'
+    - 'add_lex_hash_silent_if_already_added' boolean
+
 0.16  Mon Jun  8 10:08:03 2009
     - move all no()s outside of loops
     - add support for use_external_lex_cache (see Locale::Maketext's https://rt.cpan.org/Ticket/Display.html?id=46738 )

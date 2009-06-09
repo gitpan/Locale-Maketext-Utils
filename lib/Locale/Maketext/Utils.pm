@@ -2,7 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-$Locale::Maketext::Utils::VERSION = '0.16';
+$Locale::Maketext::Utils::VERSION = '0.17';
 
 use Locale::Maketext;
 @Locale::Maketext::Utils::ISA = qw(Locale::Maketext);
@@ -59,7 +59,7 @@ sub init {
                     $lh->{'_log_phantom_key'}->( $lh, $key, @args );
                 }
             }
-
+            
             no strict 'refs';
             local ${ $lh->get_base_class() . '::Lexicon' }{'_AUTO'} = 1;
             return $lh->maketext( $key, @args );
@@ -244,6 +244,7 @@ sub add_lexicon_override_hash {
 
     no strict 'refs';
     if ( my $ref = tied( %{ $ns . '::Lexicon' } ) ) {
+        return 1 if $lh->{'add_lex_hash_silent_if_already_added'} && exists $ref->{'hashes'} && exists $ref->{'hashes'}{$name};
         if ( $ref->can('add_lookup_override_hash') ) {
             return $ref->add_lookup_override_hash( $name, $hr );
         }
@@ -271,6 +272,7 @@ sub add_lexicon_fallback_hash {
 
     no strict 'refs';
     if ( my $ref = tied( %{ $ns . '::Lexicon' } ) ) {
+        return 1 if $lh->{'add_lex_hash_silent_if_already_added'} && exists $ref->{'hashes'} && exists $ref->{'hashes'}{$name};
         if ( $ref->can('add_lookup_fallback_hash') ) {
             return $ref->add_lookup_fallback_hash( $name, $hr );
         }
@@ -485,7 +487,13 @@ sub maketext {
             if ( defined ${ $ns . '::Onesided' } ) {
                 if ( ${ $ns . '::Onesided' } ) {
                     my $lex_ref = \%{ $ns . '::Lexicon' };
-                    $lex_ref->{$key} = $key;
+                    if ($class->{'use_external_lex_cache'}) {
+                        $class->{'_external_lex_cache'}{$key} = $key;
+                    }
+                    else {
+                        $lex_ref->{$key} = $key;
+                    }
+                    
                     return __maketext( $class, $key, @args );
                 }
             }

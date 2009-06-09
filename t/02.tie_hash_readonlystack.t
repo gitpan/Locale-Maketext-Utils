@@ -1,4 +1,4 @@
-use Test::More tests => 32;
+use Test::More tests => 40;
 
 BEGIN { 
    chdir 't';
@@ -139,6 +139,17 @@ SKIP: {
     #### tied Tie::Hash::ReadonlyStack w/ ns ####
     ok($ro->add_lexicon_override_hash('ja', 'before', {'a'=>42}), "add_lexicon_override_hash() returns true with Tie::Hash::ReadonlyStack compat Lexicon w/ ns");
     ok($ro->add_lexicon_fallback_hash('ja', 'after', {'b'=>1}), "add_lexicon_fallback_hash() returns true with Tie::Hash::ReadonlyStack compat Lexicon w/ ns");
+    
+    # add_lex_hash_silent_if_already_added
+     ok(!$ro->add_lexicon_override_hash('ja', 'before', {'a'=>42}), 'add override w/ already existing name returns false w/ ns');
+     ok(!$ro->add_lexicon_fallback_hash('ja', 'before', {'a'=>42}), 'add fallback w/ already existing name returns false w/ ns');
+    
+    {
+        local $ro->{'add_lex_hash_silent_if_already_added'} = 1;
+        ok($ro->add_lexicon_override_hash('ja', 'before', {'a'=>42}), 'add override w/ already existing name returns true w/ ns');
+        ok($ro->add_lexicon_fallback_hash('ja', 'before', {'a'=>42}), 'add fallback w/ already existing name returns true w/ ns');
+    }
+    
     ok($ro->del_lexicon_hash('ja', 'before'), "del_lexicon_hash() returns true with Tie::Hash::ReadonlyStack compat Lexicon w/ ns");
     ok($ro->del_lexicon_hash('*', 'after'), "del_lexicon_hash() returns true with Tie::Hash::ReadonlyStack compat Lexicon w/ ns");
 
@@ -146,6 +157,18 @@ SKIP: {
 
     ok($ro->add_lexicon_override_hash('before', {'a'=>1}), "add_lexicon_override_hash() returns true with Tie::Hash::ReadonlyStack compat Lexicon w/ out ns");
     ok($ro->add_lexicon_fallback_hash('after', {'b'=>1}), "add_lexicon_fallback_hash() returns true with Tie::Hash::ReadonlyStack compat Lexicon w/ out ns");
+    
+    # add_lex_hash_silent_if_already_added
+     ok(!$ro->add_lexicon_override_hash('before', {'a'=>42}), 'add override w/ already existing name returns false w/ out ns');
+     ok(!$ro->add_lexicon_fallback_hash('before', {'a'=>42}), 'add fallback w/ already existing name returns false w/ out ns');
+    
+    {
+        local $ro->{'add_lex_hash_silent_if_already_added'} = 1;
+        ok($ro->add_lexicon_override_hash('before', {'a'=>42}), 'add override w/ already existing name returns true w/ out ns');
+        ok($ro->add_lexicon_fallback_hash('before', {'a'=>42}), 'add fallback w/ already existing name returns true w/ out ns');
+    }
+    
     ok($ro->del_lexicon_hash('before'), "del_lexicon_hash() true with Tie::Hash::ReadonlyStack compat Lexicon w/ out ns");
     ok(!$ro->del_lexicon_hash('*'), "del_lexicon_hash() returns false with star only non Tie::Hash::ReadonlyStack compat Lexicon w/ out ns");
+
 };

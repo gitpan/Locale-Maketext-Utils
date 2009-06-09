@@ -676,6 +676,14 @@ Like L</add_lexicon_override_hash()> except that it adds the hash after any othe
 
 Uses L<Tie::Hash::ReadonlyStack/add_lookup_fallback_hash()> under the hood.
 
+=head4 $lh->{'add_lex_hash_silent_if_already_added'}
+
+That attribute when true (e.g. set in init()) will cause the add_lexicon* methods to return true if the given name has been added before it tries to add them (which will return false since they exist already)
+
+Care must be taken that you're not using the same identifier with different hashes or you some lexicons will simply not be added.
+
+A better approach is to design your stack modifying logic so it doesn't try to add uplicate entries. This option is really only inteneded for debugging and testing.
+
 =head3 del_lexicon_hash()
 
 This deletes a hash added via add_lexicon_override_hash() or add_lexicon_fallback_hash() from the stack.
