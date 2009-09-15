@@ -16,7 +16,7 @@ if($@) {
 }
 
 SKIP: {
-    skip "$nss required for testing Tie::Hash::ReadonlyStack compat methods", 30 if $nss;
+    skip "$nss required for testing Tie::Hash::ReadonlyStack compat methods", 38 if $nss;
 
     package MyTie;
     require Tie::Hash;

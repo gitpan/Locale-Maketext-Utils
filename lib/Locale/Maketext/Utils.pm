@@ -2,7 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-$Locale::Maketext::Utils::VERSION = '0.17';
+$Locale::Maketext::Utils::VERSION = '0.18';
 
 use Locale::Maketext;
 @Locale::Maketext::Utils::ISA = qw(Locale::Maketext);
@@ -704,6 +704,36 @@ sub output {
         }
         return $string;
     }
+}
+
+sub output_chr {
+    my ( $lh, $chr_num ) = @_;
+    return if $chr_num !~ m/\A\d+\z/;
+    my $chr =  chr($chr_num);
+    if ($chr_num > 127) {
+         require Encode;
+         $chr = Encode::encode($lh->encoding(), $chr);
+    }
+    
+    if ( exists $lh->{'-t-STDIN'} ? $lh->{'-t-STDIN'} : -t STDIN ) {
+        return $chr;
+    }
+    else {
+        return $chr_num == 34 || $chr_num == 147 || $chr_num == 148 ? '&quot;'
+             : $chr_num == 38                                       ? '&amp;'
+             : $chr_num == 39 || $chr_num == 145 || $chr_num == 146 ? '&#39;'
+             : $chr_num == 60                                       ? '&lt;'
+             : $chr_num == 62                                       ? '&gt;'
+             :                                                        $chr
+             ;
+    }
+}
+
+sub output_class {
+    my ( $lh, $string, @classes ) = @_;
+    # my $class_str = join(' ', @classes); # in case $" is hosed?
+    # TODO maybe: use @classes to get ANSI color map of some sort
+    return ( exists $lh->{'-t-STDIN'} ? $lh->{'-t-STDIN'} : -t STDIN ) ? "\e[1m$string\e[0m" : qq{<span class="@classes">$string</span>};
 }
 
 sub output_underline {

@@ -318,13 +318,15 @@ delete $en->{'_get_key_from_lookup'}; #  don't this anymore
 # datetime
 
 ok( $en->maketext('[datetime]') =~ m{ \A \w+ \s \d+ [,] \s \d+ \z }xms, 'undef 1st undef 2nd');
+
 my $dt_obj = DateTime->new('year'=> 1978); # DateTime already brought in by prev [datetime] call
-ok( $en->maketext('[datetime,_1]', $dt_obj)  =~ m{^January 1, 1978$}i, '1st arg object');
-ok( $en->maketext('[datetime,_1,_2]', {'year'=>1977}, '')  =~ m{^January 1, 1977$}i, '1st arg hashref');
+# due to rt 49724 it may be 19NN or just NN so we make the century optional
+ok( $en->maketext('[datetime,_1]', $dt_obj)  =~ m{^January 1, (?:19)?78$}i, '1st arg object');
+ok( $en->maketext('[datetime,_1,_2]', {'year'=>1977}, '')  =~ m{^January 1, (?:19)?77$}i, '1st arg hashref');
 ok( $en->maketext('[datetime,_1,_2]', {'year'=>1977}, '%Y') eq '1977', '2nd arg string');
-ok( $en->maketext('[datetime,_1,_2]', {'year'=>1977}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^January 1, 1977 12:00:00 AM .*$}i, '2nd arg coderef');
-ok( $en->maketext('[datetime,_1,_2]', {'year'=>1978, 'month'=>11, 'day'=>13}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^November 13, 1978 12:00:00 AM .*$}i ,'[datetime] English');
-ok( $fr->maketext('[datetime,_1,_2]', {'year'=>1999, 'month'=>7, 'day'=>17}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^17 juillet 1999 00:00:00 .*$}i ,'[datetime] French');
+ok( $en->maketext('[datetime,_1,_2]', {'year'=>1977}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^January 1, (?:19)?77 12:00:00 AM .*$}i, '2nd arg coderef');
+ok( $en->maketext('[datetime,_1,_2]', {'year'=>1978, 'month'=>11, 'day'=>13}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^November 13, (?:19)?78 12:00:00 AM .*$}i ,'[datetime] English');
+ok( $fr->maketext('[datetime,_1,_2]', {'year'=>1999, 'month'=>7, 'day'=>17}, sub { $_[0]->{'locale'}->long_datetime_format }) =~ m{^17 juillet (?:19)?99 00:00:00 .*$}i ,'[datetime] French');
 
 ok( $en->maketext('[datetime,_1,short_datetime_format]', {'year'=>1977} ) eq '1/1/77 12:00 AM', '2nd arg DateTime::Locale method name');
 ok( $en->maketext('[datetime,_1,_2]', {'year'=>1977}, 'invalid' ) eq 'invalid', '2nd arg DateTime::Locale method name invalid');

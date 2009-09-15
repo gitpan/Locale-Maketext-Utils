@@ -504,6 +504,26 @@ This method can be used also when the context has different types of values. For
 
    'To unlock this account [output,url,_1,plain,execute `%s` via SSH,html,click here].'
 
+=item * chr
+
+Output the character represented by the given number. It is a wrapper around perl's built-in L<chr> function that also encodes the value into the handle's encoding if it's over 127, and outputs as appropriate for the UI.
+
+    $lh->maketext('I [output,chr,60]3 ascii art!');
+
+For text you get 'I <3 ascii art!'
+
+For HTML you get 'I &lt;3 ascii art!'
+
+=item * class
+
+Output the given string as a certain class of text. Since terminals have no concept of a styling classes we currently just make it bold. You could create your own 'sub output_class' that has a map of your project's standard visual CSS classes to ANSIColor escape sequences to use.
+
+    $lh->maketext('The user [output,class,_1,highlight,contrast] was updated.', $user);
+    
+For text you get 'The user bob was updated.' with 'bob' wrapped in the standard terminal control code 1.
+
+For HTML you get 'The user <span class="highlight contrast">bob</span> was updated.'
+
 =back 
 
 =head3 Adding your own output methods
@@ -525,7 +545,7 @@ Then you can use this in your lexicon key:
 
    'Quote of the day "[output,de_profanitize,_1,9,*]"'
 
-Your class can do whatever you like to determine the context and is by no means limited to 'plain' and 'html'  types. Keys that are not context names (i.e. _type) shoudl be preceded by an underscore.
+Your class can do whatever you like to determine the context and is by no means limited to 'plain' and 'html'  types. Keys that are not context names (i.e. _type) should be preceded by an underscore.
 
 =head1 Project example
 
