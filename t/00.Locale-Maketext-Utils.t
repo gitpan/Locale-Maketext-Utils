@@ -1,4 +1,4 @@
-use Test::More tests => 124;
+use Test::More tests => 123;
 
 BEGIN { 
    unshift @INC, qw(lib ../lib);
@@ -244,27 +244,28 @@ ok($fr->fetch('Thank you') eq 'Merci', 'append_to_lexicons()');
 ok($fr->fetch('Fallback') eq 'Fallback new', 'fallback behavior after append');
 
 my $fr_hr = $fr->lang_names_hashref('en-uk', 'it', 'xxyyzz');
-ok($fr_hr->{'en'} eq 'Anglais', 'names default');
-ok($fr_hr->{'en-uk'} eq 'Anglais (UK)', 'names suffix');
-ok($fr_hr->{'it'} eq 'Italien', 'names normal');
+
+ok($fr_hr->{'en'} eq 'anglais', 'names default');
+ok($fr_hr->{'en-uk'} eq 'anglais (uk)', 'names suffix');
+ok($fr_hr->{'it'} eq 'italien', 'names normal');
 ok($fr_hr->{'xxyyzz'} eq 'xxyyzz', 'names fake');
 
 my $sig_warn = exists $SIG{__WARN__} && defined $SIG{__WARN__} ? $SIG{__WARN__} : 'no exists/defined';
-my $base_sig_warn = exists $Locales::Base::SIG{__WARN__} && defined $Locales::Base::SIG{__WARN__} ? $Locales::Base::SIG{__WARN__} : 'no exists/defined';
+#my $base_sig_warn = exists $Locales::Base::SIG{__WARN__} && defined $Locales::Base::SIG{__WARN__} ? $Locales::Base::SIG{__WARN__} : 'no exists/defined';
 my ($loc_hr, $nat_hr) = $fr->lang_names_hashref('en-uk', 'it', 'xxyyzz');
 my $sig_warn_aft = exists $SIG{__WARN__} && defined $SIG{__WARN__} ? $SIG{__WARN__} : 'no exists/defined';
-my $base_sig_warn_aft = exists $Locales::Base::SIG{__WARN__} && defined $Locales::Base::SIG{__WARN__} ? $Locales::Base::SIG{__WARN__} : 'no exists/defined';
+#my $base_sig_warn_aft = exists $Locales::Base::SIG{__WARN__} && defined $Locales::Base::SIG{__WARN__} ? $Locales::Base::SIG{__WARN__} : 'no exists/defined';
 ok($sig_warn eq $sig_warn_aft, 'main sig warn unchanged by lang_names_hashref()');
-ok($base_sig_warn eq $base_sig_warn_aft, 'locale::base sig warn unchanged by lang_names_hashref()');
+# ok($base_sig_warn eq $base_sig_warn_aft, 'locale::base sig warn unchanged by lang_names_hashref()');
 
-ok($loc_hr->{'en'} eq 'Anglais', 'array context handle locale names default');
-ok($loc_hr->{'en-uk'} eq 'Anglais (UK)', 'array context handle locale names suffix');
-ok($loc_hr->{'it'} eq 'Italien', 'array context handle locale names normal');
+ok($loc_hr->{'en'} eq 'anglais', 'array context handle locale names default');
+ok($loc_hr->{'en-uk'} eq 'anglais (uk)', 'array context handle locale names suffix');
+ok($loc_hr->{'it'} eq 'italien', 'array context handle locale names normal');
 ok($loc_hr->{'xxyyzz'} eq 'xxyyzz', 'array context handle locale  names fake');
 
 ok($nat_hr->{'en'} eq 'English', 'array context native names default');
-ok($nat_hr->{'en-uk'} eq 'English (UK)', 'array context native names suffix');
-ok($nat_hr->{'it'} eq 'Italian', 'array context native names normal');
+ok($nat_hr->{'en-uk'} eq 'English (uk)', 'array context native names suffix');
+ok($nat_hr->{'it'} eq 'italiano', 'array context native names normal');
 ok($nat_hr->{'xxyyzz'} eq 'xxyyzz', 'array context native names fake');
 
 my $loadable_hr = $fr->loadable_lang_names_hashref('en-uk', 'it', 'xxyyzz', 'fr');

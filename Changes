@@ -1,5 +1,8 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.19 Mon May 24 23:11:15  2010
+    - add updated Locales useage
+
 0.18  Tue Sep 15 21:40:54 2009
     - updated datetime() tests to take into account DateTime::Locale rt 49724
     - update # of tie hash tests to avoid spurious failure

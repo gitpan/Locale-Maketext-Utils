@@ -6,7 +6,7 @@ WriteMakefile(
     PREREQ_PM         => {
         'Locale::Maketext'  => 0,
         'File::Slurp'       => 0,
-        'Locales::Base'     => 0.03,
+        'Locales'           => 0.15,
         'DateTime'          => 0,
     },
     ($] >= 5.005 ?   

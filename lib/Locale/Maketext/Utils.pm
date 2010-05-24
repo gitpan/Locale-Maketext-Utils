@@ -2,7 +2,7 @@ package Locale::Maketext::Utils;
 
 use strict;
 use warnings;
-$Locale::Maketext::Utils::VERSION = '0.18';
+$Locale::Maketext::Utils::VERSION = '0.19';
 
 use Locale::Maketext;
 @Locale::Maketext::Utils::ISA = qw(Locale::Maketext);
@@ -158,7 +158,6 @@ sub lang_names_hashref {
     my ( $lh, @langcodes ) = @_;
 
     if ( !@langcodes ) {                          # they havn't specified any langcodes...
-        require File::Slurp;                      # only needed here, so we don't use() it
         require File::Spec;                       # only needed here, so we don't use() it
 
         my @search;
@@ -175,49 +174,48 @@ sub lang_names_hashref {
         for my $dir (@search) {
             my $lookin = File::Spec->catdir( $dir, $path );
             next DIR if !-d $lookin;
-          PM:
-            for my $pm ( grep { /^\w+\.pm$/ } File::Slurp::read_dir($lookin) ) {
-                $pm =~ s{\.pm$}{};
-                next PM if !$pm;
-                push @langcodes, $pm;
+            if (opendir my $dh, $lookin) {
+              PM:
+                for my $pm ( grep { /^\w+\.pm$/ } grep !/^\.+$/, readdir($dh) ) {
+                    $pm =~ s{\.pm$}{};
+                    next PM if !$pm;
+                    next PM if $pm eq 'Utils';
+                    push @langcodes, $pm;
+                }
+                closedir $dh;
             }
         }
     }
 
-    require Locales::Language;    # only needed here, so we don't use() it
-    
-    local $Locales::Base::SIG{__WARN__} = sub { };    # stifle copious and useless-for-our-purposes warn()'s ...
 
-    my $obj_two_char = substr( $lh->language_tag(), 0, 2 );    # Locales::Language only does two char ...
+    require Locales;
+    my $loc_obj = Locales->new($lh->get_language_tag()) || Locales->new(substr( $lh->get_language_tag(), 0, 2 )) || Locales->new('en');
 
     my $langname  = {};
-    my $native    = wantarray ? {} : undef;
-    my $getLocale = Locales::Language::getLocale();
-
-    Locales::Language::setLocale($obj_two_char);
+    my $native    = wantarray && $Locales::VERSION > 0.06 ? {} : undef;
+    my $direction = wantarray && $Locales::VERSION > 0.09 ? {} : undef;
 
     for my $code ( 'en', @langcodes ) {                        # en since its "built in"
-        my $two_char = substr( $code, 0, 2 );                  # Locales::Language only does two char ...
-        my $left_ovr = length $code > 2 ? uc( substr( $code, 3 ) ) : '';
-        my $long_nam = Locales::Language::code2language($two_char);
 
-        $langname->{$code} = $long_nam || $code;
-        $langname->{$code} .= " ($left_ovr)" if $left_ovr && $long_nam;
+        $langname->{$code} = $loc_obj->get_language_from_code($code,1);
 
         if ( defined $native ) {
-            Locales::Language::setLocale($code);
+            $native->{$code} = $loc_obj->get_native_language_from_code($code,1);
+        }
 
-            my $long_nam = Locales::Language::code2language($two_char);
-            $native->{$code} = $long_nam || $code;
-            $native->{$code} .= " ($left_ovr)" if $left_ovr && $long_nam;
-
-            Locales::Language::setLocale($obj_two_char);
+        if ( defined $direction ) {
+            $direction->{$code} = $loc_obj->get_character_orientation_from_code($code); # do not force a value
+            if (!$direction->{$code}) {
+                # no direction defined, fallback to parent's if it has a parent language (i.e. ll_tt)
+                my ($ln,$tr) = Locales::split_tag($code);
+                if ($ln ne $code) {
+                    $direction->{$code} = $loc_obj->get_character_orientation_from_code($ln); # do not force a value
+                }
+            }
         }
     }
 
-    Locales::Language::setLocale($getLocale);
-
-    return wantarray ? ( $langname, $native ) : $langname;
+    return wantarray ? ( $langname, $native, $direction ) : $langname;
 }
 
 sub loadable_lang_names_hashref {
