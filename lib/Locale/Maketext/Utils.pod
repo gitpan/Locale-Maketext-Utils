@@ -1,3 +1,5 @@
+=encoding utf-8
+
 =head1 NAME
 
 Locale::Maketext::Utils - Adds some utility functionality and failure handling to Local::Maketext handles
@@ -34,21 +36,6 @@ $enc is $MyApp::Localize::fr::Encoding || $MyApp::Localize::Encoding || encoding
 =head1 Argument based singleton
 
 The get_handle() method returns an argument based singleton. That means the overhead of initializing an object and compiling parts of the lexicon being used only happen once even if get_handle() is called several times with the same arguments.
-
-=head1 our $Onesided
-
-Setting this to a true value treats the class's %Lexicon as one sided. What that means is if the hash's keys and values will be the same (IE your main Lexicon) you can specify it in the key only and leave the value blank. 
-
-So instead of a Lexicon entry like this:
-
-   q{Hello I love you won't you tell me your name} => q{Hello I love you won't you tell me your name},
-
-You just do:
-
-    q{Hello I love you won't you tell me your name} => '',
-
-The advantages are a smaller file, less prone to mistyping or mispasting, and 
-most important of all someone translating it can simply copy it into their module and enter their translation instead of having to remove the value first.   
 
 =head1 Lexicon hashes that are "read only"
 
@@ -197,6 +184,66 @@ The value is the key and the value that that lexicon had.
 
 This is used internally to remove _AUTO keys so that the failure handler below will get used
 
+=head2 $lh->get_locales_obj()
+
+Return a L<Locales> object suitable for the object (or the optional locale tag argument). 
+
+If the locale tag can not be loaded it tries the super (if any) then $lh->{'fallback_locale} (if set) and its super (if any) before defaulting to 'en'.
+
+L<Locales> is where all the CLDR data and logic comes from.
+
+=head2 $lh->get_language_tag_name();
+
+Takes 2 optional arguments: 
+
+=over 4
+
+=item 1. A locale tag whose name you want (defaults to the object's locale). 
+
+=item 2. A locale tag whose language you want the name to be in (defaults to the object's locale).
+
+=back 
+
+These names are defined by the CLDR.
+
+=head2 $lh->get_html_dir_attr()
+
+With no argument, returns the object locale’s character orientation as a string suitable for HTML’s dir attribute.
+
+Given a CLDR character orientation string it will return a string suitable for HTML’s dir attribute.
+
+Given a locale tag and second argument of true (specifying that the first argument is a tag not a CLDR character orientation string ) it returns that locale’s character orientation as a string suitable for HTML’s dir attribute.
+
+The character orientation comes from CLDR.
+
+=head2 $lh->get_locale_display_pattern()
+
+Returns the locale display pattern for the object or the tag given as the ofrst optional argument.
+
+The pattern comes from the CLDR.
+
+=head2 $lh->get_language_tag_character_orientation()
+
+Returns the character orientation string for the object or the tag given as the first optional argument.
+
+The string comes from the CLDR.
+
+=head2 $lh->text('Your key here.')
+
+Get the lexicon’s text of 'Your key here.' without compiling it (in other words all bracket notation is still in tact).
+
+The results are sutiable for the first arg to makethis().
+
+=head2 $lh->makethis()
+
+Like maketext() but does not lookup the phrase in the lexicon and compiles the phrase exactly as given.
+
+=head2 $lh->makethis_base()
+
+Like makethis() but uses the base class as the phrase compiler instead of the object.
+
+This is usful in testing when you want consistent semantics on arbitrary objects.
+
 =head1 Automatically _AUTO'd Failure Handling with hooks
 
 This module sets fail_with() so that failure is handled for every Lexicon you define as if _AUTO was set and in addition you can use the hooks below.
@@ -232,79 +279,35 @@ That way it will continue on to the part below:
 
 If $lh->{'_get_key_from_lookup'} is not a code ref, or $lh->{'_get_key_from_lookup'} returned undef then this method is called with the arguments ($lh, $key, @args) right before the failure handler does its _AUTO wonderfulness.
 
-=head1 numf() decimal length support/sprintf format
+=head1 Improved Bracket Notation
 
-numf() will behave exactly the same as it always has except now it take an additional argument.
+=head2 numf()
 
-This additional argument will describe how to handle any decimal or format via sprintf
+This uses the decimal format defined in CLDR to format the number. That means there is no need to subclass or define special data per class.
 
-Normally this is what happens:
+It takes an additional argument to specify the maximum number of decimal places you want.
 
-    $lh->maketext("pi is [numf,_1]",355/113); #  3.14159
-    
-An empty string value will leave the decimals as they are:
+=head2 numerate()
 
-   $lh->maketext("pi is [numf,_1,_2]",355/113,''); #  3.14159292035398
+CLDR plural rule aware version of the L<Locale::Maketext> numerate(). That means there is no need to subclass.
 
-A zero will remove the decimal character and decimal numbers completely.
+See L<Locales::DB::Docs::PluralForms> for locale specific arguments.
 
-Any other number will truncate it (without rounding) to the length given
+=head2 quant()
 
-   $lh->maketext("pi is [numf,_1,_2]",355/113,6); # 3.141592
+CLDR plural rule aware version of the L<Locale::Maketext> quant(). 
 
-A non-numeric value is used as a sprintf format (which does some rounding)
+That means there is no need to subclass, you need to specify all arguments (except the always optional “Special Zero” argument that some locales have)
 
-   $lh->maketext("pi is just under [numf,_1,%.3f]",355/113) # 3.142
-   
-It'd be great if this were the default and I've proposed it at L<http://rt.cpan.org/Ticket/Display.html?id=36136>
+See L<Locales::DB::Docs::PluralForms> for locale specific arguments.
 
-=head1 Argument range in bracket notation
+e.g. Key is 'en', value is 'ru':
 
-Note: this behavior is experimental and should not be used in production  yet. Keep reading if you want to find out why.
+    '… [quant,_1,one category text,other category text,special_zero text] …' => '… [quant,_1,one category text,few category text,many category text,other category text] …'
 
-If you want to operate on several arguments there are currently only 2 options:
+You can use '%s' to specify the position of the number. Other wise it is prepended with a space (except “Special Zero” which won't contain the number.)
 
-=over 4
-
-=item know the amount of arguments ahead of time
-
-    [method,_2,_3,_4]
-
-=item use all the arguments
-
-    [method,_*]
-
-=back
-
-What if you won't know the length of arguments ahead of time or only want to operate on some, for example with L</list>() or L</join>()?
-
-You'd use this range notation:
-
-   [_1] [method,_2.._4] 
-   
-   [_1] [method,_2.._#]
-   
-   _# is the last item in the list, outside of '..' range notation you have to use _-1 not _#
-
-Like _* 0 is not used so:
-
-   [method,_-1.._#], qw(a b c d) becomes d,a,b,c,d not 'd,OBJ-stringified-from-zero,a,b,c
-   
-Like perl's range operator if both side are the same its a list with 1 item.
-
-   '[_1.._#]', 1,2 becomes '12'
-   
-   '[_1.._#]', 1 becomes '1'
-   
-Also if they are an invalid range you get an empty list
-
-   '[_2.._1]', qw(a b) # no-op just like for(2..1)
-
-This is for proof of concept only as the way it currently happens changes the lookup key which defeats the purpose.
-
-For technical reasons it can not be done easily by overriding one method, it requires changes in the middle of several
-
-It'd be great if this were the default and I've proposed it at L<http://rt.cpan.org/Ticket/Display.html?id=37955>
+The number is formatted via numf() with a max decimal place of 3.
 
 =head1 Additional bracket notation methods
 
@@ -312,21 +315,42 @@ It'd be great if this were the default and I've proposed it at L<http://rt.cpan.
 
 Joins the given arguments with the first argument:
 
-  [join,-,_*], @numbers becomes 1-2-3-4-5
-  [join,,_*], @numbers becomes 12345
-  [join,~,,_*], @numbers becomes 1,2,3,4,5
-  [join,~, ,_*], @numbers becomes 1, 2, 3, 4, 5
+   [join,-,_*], @numbers becomes 1-2-3-4-5
+   [join,,_*], @numbers becomes 12345
+   [join,~,,_*], @numbers becomes 1,2,3,4,5
+   [join,~, ,_*], @numbers becomes 1, 2, 3, 4, 5
 
-=head2 list()
+Array ref arguments are expanded:
+
+   $lh->maketext('… [join,-,_1,2] …', [1,2,3],4); # … 1-2-3-4 …
+
+=head2 list_and()
+
+Take a list of arguments (like join–array ref arguments are expanded) and format it per the locale's CLDR list pattern for and.
+
+   You chose [list_and,_1]., \@pals
+   
+   You chose Rhiannon.
+   You chose Rhiannon and Parker.
+   You chose Rhiannon, Parker, and Char.
+   You chose Rhiannon, Parker, Char, and Bean.
+
+See L<Locales/get_list_and()> for more information.
+
+=head2 list_or()
+
+Same as list_and but with or-lists. See L<Locales/get_list_or()> for more information and an important caveat.
+
+=head3 list()–deprecated
 
 Creates a phrased list "and/or" style:
 
-  You chose [list,and,_*], @pals
+  You chose [list,and,_*]., @pals
   
-  You chose Rhiannon
-  You chose Rhiannon and Parker
-  You chose Rhiannon, Parker, and Char
-  You chose Rhiannon, Parker, Char, and Bean
+  You chose Rhiannon.
+  You chose Rhiannon and Parker.
+  You chose Rhiannon, Parker, and Char.
+  You chose Rhiannon, Parker, Char, and Bean.
 
 The 'and' above is by default an '&':
 
@@ -350,13 +374,15 @@ The variables are (w/ defaults shown):
   $lh->{'oxford_seperator'} = ',';
   $lh->{'list_default_and'} = '&';
 
+Array ref arguments are expanded.
+
 =head2 datetime()
 
 Allows you to get datetime output formatted for the current locale.
 
     'Right now it is [datetime]'
 
-It can take 2 arguments which default to DateTime->now and 'long_date_format' respectively.
+It can take 2 arguments which default to DateTime->now and 'date_format_long' respectively.
 
 The first argument  tells the function what point in time you want. The values can be:
 
@@ -386,19 +412,19 @@ A colon followed by nothing will result in UTC
 
 The second tells it what format you'd like that point in time stringified. The values can be:
 
-=item A coderef that returns a string suitable for DateTime->strftime()
+=item A coderef that returns a string suitable for DateTime->format_cldr()
 
-=item A string that is the name of a L<DateTime::Locale> method
+=item A string that is the name of a L<DateTime::Locale> *_format_* method
 
-=item A string suitable for DateTime->strftime()
+=item A string suitable for DateTime->format_cldr()
 
 =back
 
 =head2 format_bytes()
 
-Shortcut to L<Number::Bytes::Human> format_bytes() 
+Convert byte count to human readable format. Does not require external modules.
 
-   'You have used [format_bytes,_1] of your alloted space', $bytes
+   'You have used [format_bytes,_1] of your alloted space.', $bytes
 
 =head2 convert()
 
@@ -410,19 +436,62 @@ Shortcut to L<Math::Units> convert()
 
 This method allows you to choose a word or phrase to use based on a boolean.
 
-The first argument is the boolean value which should true, false, or undefined. The next arguments are the string to use for a true value, the string to use for a false value and an optional value for an undefined value (if none is given undefined uses the false value).
+The first argument is the boolean value which should be true, false, or undefined. The next arguments are the string to use for a true value, the string to use for a false value and an optional value for an undefined value (if none is given undefined uses the false value).
 
   'You [boolean,_1,have won,didn't win] a new car.'
 
   'You [boolean,_1,have won,didn't win,have not entered our contest to win] a new car.'
 
    $lh->maketext(q{Congratulations! It's a [boolean,_1,girl,boy]!}, $is_a_girl);
+   
+It can have “embedded args”:
+
+    'You must specify a value[boolean,_1, for the “_1” field].
+
+=head2 is_defined()
+
+This method allows you to choose a word or phrase to use based on definedness.
+
+The first argument is the value which should be defined or undefined. 
+
+The next arguments are: the string to use for a defined value, the string to use for a undefined value and an optional string for a defined value  that is false (if none is given undefined uses the undefined value).
+
+It can have “embedded args”.
+
+    'Sorry, [is_defined,_2,“_2” is an invalid,you must specify a valid] value for “[_1]”.' 'domain', $domain
+    # Sorry, “localhost” is an invalid value for “domain”.
+    # Sorry, you must specify a valid value for “domain”.
+
+=head2 is_future()
+
+The first argument is the same as the first argument to datetime(). Then comes the string for future and the string for false.
+
+    Your session [is_future,_1,will expire,expired] on [datetime,_1,date_format_medium].
+
+=head2 comment()
+
+Embed comments in your phrases.
+
+    'The transmogrifier has been constipulated to level “[_1]”[comment,The argument is the variable name containing the superposition of the golden ratio’s decimal place in relation to π as mildegredaded by the authoritative falloosifier.].'
+    # The transmogrifier has been constipulated to level “☺”.
+
+=head2 asis()
+
+Include non-translatable text in your phrase, e.g. a proper name.
+
+   'Thanks you for contacting [asis,Feel Good Inc.].'
+   
+This is a short-name alias to 'output,asis' so it can have embedded methods like any output() method.
+
+   'Thanks you for contacting [asis,Foo chr(38) Barsup(®)].'
+   
+Does not support embedded args.
 
 =head2 output()
 
 When you output a phrase you might mark it up by wrapping the string in, say, <p> tags. You wouldn't inlcude HTML *in* the key itself for a number of obvious reasons (HTML is not human, HTML is not the only possible output you may ever want, etc):
 
-    print  $lh->maketext('<p class="ok">Good news everyone!</p>'); # WRONG DO NOT DO THIS  !!
+    print $lh->maketext('<p class="ok">Good news everyone!</p>'); # WRONG DO NOT DO THIS  !!
     
     print q{<p class="ok">} . $lh->maketext('Good news everyone!') . "</p>"; # good
 
@@ -432,15 +501,21 @@ Again, you don't want to add formatting inside the string so what do you do? You
 
 This method allows you to specify various output types. Those types allows a key to specify how a word or phrase should be output without having to understand or anticipate every possible context it might be used in.
 
-   'What ever you do, do [output,strong,not] cut the blue wire!'
+   'What ever you do, do [output,strong,NOT] cut the blue wire!'
    
    'Your addon domain [output,underline,_1] has been setup.' 
 
 =head3 Default output methods.
 
+Each output method name is the second argument to output. e.g. if the output method is 'xyz' you'd use it like this [output,xyz,…] and define a new one like this 'sub output_xyz { … }'.
+
+All output() methods support embedded methods: sub(), sup(), chr().
+
 =over 4 
 
-These default bare bones methods provide 2 contexts: plain text and HTML. It determines which to use based on if -t STDIN. Feel free to over ride them if they do not suit your needs.
+These default bare bones methods support 3 contexts: HTML, ANSI, and plain text. See L</output() context> below.
+
+Feel free to over ride them if they do not suit your needs.
 
 The terminal control codes were ripped from L<Term::ANSIColor> but the module itself is not used.
 
@@ -452,6 +527,8 @@ Underline the text:
 
 For HTML it uses a span tag w/ CSS, for text it uses the standard terminal control code 4.
 
+Allows embedded arguments in the string.
+
 =item * strong
 
 Make the text strong:
@@ -459,6 +536,8 @@ Make the text strong:
     'You [output,strong,do not] want to feed the velociraptors.'
    
 For HTML it uses a <strong>, for text it uses the standard terminal control code 1.
+
+Allows embedded arguments in the string.
 
 =item * em
 
@@ -468,9 +547,21 @@ Add emphasis to the text:
 
 For HTML it uses a <em>, for text it uses the standard terminal control code 3. (This may change in the future. See the blurb about "not all displays are ISO 6429-compliant" at L<Term::ANSIColor/NOTES>.)
 
+Allows embedded arguments in the string.
+
 =item * url
 
 Handle URL's appropriately:
+
+In its simplest form you pass it a URL and the text:
+
+   'Visit [output,url,_1,CPAN] today.', 'http://search.cpan.org'
+
+in HTML context you get: Visit <a href="http://search.cpan.org">CPAN</a> today.
+
+in non-HTML context you get: Visit CPAN (http://search.cpan.org) today.
+
+It is more flexible by using a special hash.
 
    'You must [output,url,_1,html,click here,plain,go to] to complete your registration.'
    
@@ -504,6 +595,20 @@ This method can be used also when the context has different types of values. For
 
    'To unlock this account [output,url,_1,plain,execute `%s` via SSH,html,click here].'
 
+Tips:
+
+=over 4
+
+=item * Pass the URL in as an argument so that if the URL changes your phrase won't. That also lends itself to reusability.
+
+=item * Try to use context agnostic verbiage. 
+
+e.g. Click [output,url,_1,here] for the documentation.
+
+It won't look right in a terminal (e.g. Click here (http://….) for the documentation.) thus it takes away reusability.
+
+=back
+
 =item * chr
 
 Output the character represented by the given number. It is a wrapper around perl's built-in L<chr> function that also encodes the value into the handle's encoding if it's over 127, and outputs as appropriate for the UI.
@@ -519,10 +624,74 @@ For HTML you get 'I &lt;3 ascii art!'
 Output the given string as a certain class of text. Since terminals have no concept of a styling classes we currently just make it bold. You could create your own 'sub output_class' that has a map of your project's standard visual CSS classes to ANSIColor escape sequences to use.
 
     $lh->maketext('The user [output,class,_1,highlight,contrast] was updated.', $user);
-    
+
 For text you get 'The user bob was updated.' with 'bob' wrapped in the standard terminal control code 1.
 
 For HTML you get 'The user <span class="highlight contrast">bob</span> was updated.'
+
+=item * encode_puny()
+
+    $lh->maketext('The ascii safe version of your domain is “[output,encode_puny,_1]”.', $domain);
+
+=item * decode_puny()
+
+    $lh->maketext('The unicode version of your domain is “[output,decode_puny,_1]” is really cool.', $domain);
+
+=item * asis_for_tests()
+
+Returns the given string as-is. Named so as to explicitly indicate a testing state.
+
+Allows embedded arguments in the string.
+
+=item * attr()
+
+Allows assigning attributes to a string.
+
+The first argument is the string. The rest makeup a hash of attribute name and value pairs.
+
+Allows embedded arguments in the string.
+
+=item * abbr()
+
+Takes 2 arguments: the abbreviated form and the non-abbreviated form.
+
+    [output,abbr,Abbr.,Abbreviation]
+
+=item * acronym()
+
+Takes 2 arguments: the acronym and what it stands for.
+
+   [output,acronym,SCUBA,Self Contained Underwater Breathing Apparatus]
+
+=item * sup()
+
+Super script the argument.
+
+   [output,sup,X]
+
+Allows embedded arguments in the string.
+
+=item * sub()
+
+Sub script the argument.
+
+   [output,sub,X]
+
+Allows embedded arguments in the string.
+
+=item * nbsp()
+
+Convenience method to get a non breaking space character (not the HTML entity, the character–works the same as the entity ina browser).
+
+Helps to visually indicate you intend a non breaking space when it is required.
+
+   'foo[output,nbsp]bar' vs 'foo bar'
+
+=item * asis()
+
+   [output,asis,…]
+
+Alias for L</asis()>.
 
 =back 
 
@@ -547,6 +716,74 @@ Then you can use this in your lexicon key:
 
 Your class can do whatever you like to determine the context and is by no means limited to 'plain' and 'html'  types. Keys that are not context names (i.e. _type) should be preceded by an underscore.
 
+=head2 output() context
+
+Context as used here means what type of output we want based on where it will be happening at.
+
+'html' will do output suitable for use in HTML code.
+
+'ansi' will do output suitable for a terminal.
+
+'plain' will do output without any sort of formatting.
+
+=over 4
+
+=item * set_context()
+
+Set the context. If no arguments are given it will set it to 'html' or 'ansi' based on L<IO::Interactive::Tiny>.
+
+This happens automatically if needed so you shouldn't have to call it unless you want to change it.
+
+Otherwise it accepts 'html', 'ansi', or 'plain'.
+
+=item * get_context()
+
+Takes no arguments.
+
+Returns 'html', 'ansi', or 'plain'. Calls $lh->set_context() if it has not been set yet.
+
+=item * set_context_html()
+
+Takes no arguments. Sets the contect to 'html'.
+
+=item * set_context_ansi()
+
+Takes no arguments. Sets the contect to 'ansi'.
+
+=item * set_context_plain()
+
+Takes no arguments. Sets the contect to 'plain'.
+
+=item * context_is()
+
+Takes one argument and returns true if that is what the context currently is.
+
+=item * context_is_html()
+
+Takes no arguments. Returns true if that is what the context is currently 'html'.
+
+=item * context_is_ansi()
+
+Takes no arguments. Returns true if that is what the context is currently 'ansi'.
+
+=item * context_is_plain()
+
+Takes no arguments. Returns true if that is what the context is currently 'plain'.
+
+=item * maketext_html_context()
+
+Does maketext() under the 'html' context regardless of what the current context is.
+
+=item * maketext_ansi_context()
+
+Does maketext() under the 'ansi' context regardless of what the current context is.
+
+=item * maketext_plain_context()
+
+Does maketext() under the 'plain' context regardless of what the current context is.
+
+=back
+
 =head1 Project example
 
 Main Class:
@@ -555,13 +792,12 @@ Main Class:
     use Locale::Maketext::Utils; 
     use base 'Locale::Maketext::Utils'; 
 
-    our $Onesided = 1;
     our $Encoding = 'utf-8'; 
     
     __PACKAGE__->make_alias([qw(en en_us i_default)], 1);
 
     our %Lexicon = (
-        'Hello World' => '',
+        'Hello World' => 'Hello World', # $Onesided used to allow for 'Hello World' => '',
     );
     
     1;
@@ -747,6 +983,8 @@ Add in currently beta datetime_duration() (L<DateTime::Format::Span/LOCALIZATION
 
 Add in currently beta currency(), currency_convert()
 
+Add more tests for v0.20: The changes have been in production outside of CPAN for a while, this was just a release to bring the CPAN verison up to date.
+
 =for notes to self
     $amount, $iso4217, $format
     Identical: we like specifics though...
@@ -770,7 +1008,7 @@ Daniel Muey, L<http://drmuey.com/cpan_contact.pl>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006 by Daniel Muey
+Copyright (c) 2011 cPanel, Inc. C<< <copyright@cpanel.net> >>. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.6 or,

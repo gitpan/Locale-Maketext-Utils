@@ -4,10 +4,11 @@ WriteMakefile(
     NAME              => 'Locale::Maketext::Utils',
     VERSION_FROM      => 'lib/Locale/Maketext/Utils.pm', 
     PREREQ_PM         => {
-        'Locale::Maketext'  => 0,
-        'File::Slurp'       => 0,
-        'Locales'           => 0.15,
+        'Locale::Maketext'  => 1.21,
+        'Locales'           => 0.25,
         'DateTime'          => 0,
+        'Net::LibIDN'       => 0,
+        'IO::Interactive::Tiny' => 0,
     },
     ($] >= 5.005 ?   
       (ABSTRACT_FROM  => 'lib/Locale/Maketext/Utils.pod', 

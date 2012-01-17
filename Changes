@@ -1,6 +1,57 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
-0.19 Mon May 24 23:11:15  2010
+0.20  Thu Jan 12 23:32:03 CST 2012
+
+- # from internal version: fixed POD typo 'short circuit' && removed graphemehash/function
+- # Remove: get_grapheme_helper_hashref() Cpanel::Grapheme, already a case?
+- #   (move to where it is needed in parser or incorporate into case 52784)
+- # rt's
+
+    - Removed $Onesided
+    - add 'use_external_lex_cache' support
+    - finally moved datetime() to CLDR
+    - removed needless import of L::M
+    - $Encoding to alias creation
+    - commented out strict/warnings for production at request of sponsor
+    - remove use of glob(), unadvertised maketext() that provided range support, _maketext() that implemented _external_lex_cache
+    - support array ref in join() and list()
+    - deprecate list()
+    - support embedded args in boolean(), output_class(), output_underline(), output_strong(), output_em()
+    - support embedded methods in output() method calls
+    - improve output_chr(), output_url(), format_bytes()
+    - fix dep
+    - Update CPAN version w/ new methods (and tests and POD) that have been in production outside of CPAN for a while.
+    - the methods include:
+        - get_language_tag_name()
+        - get_html_dir_attr()
+        - get_locale_display_pattern()
+        - get_language_tag_character_orientation()
+        - text()
+        - comment() - rt 54102
+        - is_future()
+        - is_defined()
+        - output_encode_puny()
+        - output_decode_puny()
+        - output_asis_for_tests()
+        - output_attr()
+        - output_abbr()
+        - output_acronym()
+        - output_sup()
+        - output_sub()
+        - get_locales_obj(), 
+        - makethis()
+        - makethis_base()
+        - output_nbsp()
+        - asis(), output_asis()
+       
+        - set_context(), set_context_html(), set_context_ansi(), set_context_plain()
+        - context_is(), context_is_html(), context_is_ansi(), context_is_plain()
+        - get_context()
+        - maketext_html_context(), maketext_ansi_context(), maketext_plain_context()
+        
+        - list_and(), list_or(), quant(), numerate(), numf()  - rt 69270
+
+0.19  Mon May 24 23:11:15  2010
     - add updated Locales useage
 
 0.18  Tue Sep 15 21:40:54 2009

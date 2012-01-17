@@ -1,13 +1,36 @@
 package Locale::Maketext::Utils;
 
-use strict;
-use warnings;
-$Locale::Maketext::Utils::VERSION = '0.19';
+# these work fine, but are not used in production
+# use strict;
+# use warnings;
+$Locale::Maketext::Utils::VERSION = '0.20';
 
-use Locale::Maketext;
+use Locale::Maketext 1.21 ();
+use Locales 0.25 ();
+use Locales::DB::CharacterOrientation::Tiny ();
+use Locales::DB::LocaleDisplayPattern::Tiny ();
+
 @Locale::Maketext::Utils::ISA = qw(Locale::Maketext);
 
 my %singleton_stash = ();
+
+# This is necessary to support embedded arguments (e.g. '... [output,foo,bar _1 baz] ...') and not interpolate things in the arguments that look like embedded args (e.g. argument #1 is '_2')
+sub _compile {
+    my ( $lh, $string, @args ) = @_;
+    my $compiled = $lh->SUPER::_compile($string);
+    return $compiled if ref($compiled) ne 'CODE';
+
+    return sub {
+        my ( $lh, @ref_args ) = @_;
+
+        # Change embedded-arg-looking-string to a not-likley-to-exist-but-if-it-does-then-you-have-bigger-problems placeholder (i.e. '_1 -!-1-!-' would act wonky, so don't do that)
+        @ref_args = map { s/\_(\-?[0-9]+)/-!-$1-!-/g if defined; $_ } @ref_args;
+        my $built = $compiled->( $lh, @ref_args );    # if an method that supported embedded args ever looked for /\_(\-?[0-9]+)/ and acted upon it then it'd need to be aware of this convention and operate on /-!-(\-?[0-9]+)-!-/ instead (or better yet don't have it look for an act upon things that look like bracket notation arguments)
+        $built =~ s/-!-(\-?[0-9]+)-!-/_$1/g;          # Change placeholders back to their original
+
+        return $built;
+    };
+}
 
 sub get_handle {
     my ( $class, @langtags ) = @_;
@@ -25,6 +48,25 @@ sub get_handle {
     return $singleton_stash{$class}{$args_sig};
 }
 
+sub get_locales_obj {
+    my ( $lh, $tag ) = @_;
+    $tag ||= $lh->get_language_tag();
+
+    if ( !exists $lh->{'Locales.pm'}{$tag} ) {
+        $lh->{'Locales.pm'}{$tag} =
+             Locales->new($tag)
+          || ( $tag ne substr( $tag, 0, 2 ) ? Locales->new( substr( $tag, 0, 2 ) ) : '' )
+          || (
+            $lh->{'fallback_locale'}
+            ?        ( Locales->new( $lh->{'fallback_locale'} )
+                  || ( $lh->{'fallback_locale'} ne substr( $lh->{'fallback_locale'}, 0, 2 ) ? Locales->new( substr( $lh->{'fallback_locale'}, 0, 2 ) ) : '' ) )
+            : ''
+          ) || Locales->new('en');
+    }
+
+    return $lh->{'Locales.pm'}{$tag};
+}
+
 sub init {
     my ($lh) = @_;
 
@@ -32,7 +74,7 @@ sub init {
 
     $lh->SUPER::init();
     $lh->remove_key_from_lexicons('_AUTO');
-    
+
     # use the base class if available, then the class itself if available
     no strict 'refs';
     for my $ns ( $lh->get_base_class(), $lh->get_language_class() ) {
@@ -40,6 +82,9 @@ sub init {
             $lh->{'encoding'} = ${ $ns . '::Encoding' } if ${ $ns . '::Encoding' };
         }
     }
+
+    # This will happen on the first call to get_context() or context_is*() so we do not do it here to avoid doing the work unless we actually need it.
+    # $lh->set_context();
 
     $lh->fail_with(
         sub {
@@ -59,12 +104,56 @@ sub init {
                     $lh->{'_log_phantom_key'}->( $lh, $key, @args );
                 }
             }
-            
-            no strict 'refs';
-            local ${ $lh->get_base_class() . '::Lexicon' }{'_AUTO'} = 1;
-            return $lh->maketext( $key, @args );
+
+            if ( $lh->{'use_external_lex_cache'} ) {
+                local $lh->{'_external_lex_cache'}{'_AUTO'} = 1;
+
+                # _AUTO does not short circuit _ keys so we can get a loop
+                if ( $key =~ m/^_/s ) {
+                    return $lh->{'_external_lex_cache'}{$key} = $key;
+                }
+                return $lh->maketext( $key, @args );
+            }
+            else {
+                no strict 'refs';
+                local ${ $lh->get_base_class() . '::Lexicon' }{'_AUTO'} = 1;
+
+                # _AUTO does not short circuit _ keys so we can get a loop
+                if ( $key =~ m/^_/s ) {
+                    return ${ $lh->get_base_class() . '::Lexicon' }{$key} = $key;
+                }
+
+                return $lh->maketext( $key, @args );
+            }
         }
     );
+}
+
+sub makethis {
+    my ( $lh, $phrase, @phrase_args ) = @_;
+
+    $lh->{'_makethis_cache'}{$phrase} ||= $lh->_compile($phrase);
+
+    my $type = ref( $lh->{'_makethis_cache'}{$phrase} );
+
+    if ( $type eq 'SCALAR' ) {
+        return ${ $lh->{'_makethis_cache'}{$phrase} };
+    }
+    elsif ( $type eq 'CODE' ) {
+        return $lh->{'_makethis_cache'}{$phrase}->( $lh, @phrase_args );
+    }
+    else {
+
+        # ? carp() ?
+        return $lh->{'_makethis_cache'}{$phrase};
+    }
+}
+
+# We do this because we do not want the language semantics of $lh
+sub makethis_base {
+    my ($lh) = @_;
+    $lh->{'base_class_pseudo_object'} ||= bless( {}, $lh->get_base_class() );    # this allows to have a seperate cache of compiled phrases
+    return $lh->{'base_class_pseudo_object'}->makethis( @_[ 1 .. $#_ ] );
 }
 
 sub make_alias {
@@ -77,10 +166,10 @@ sub make_alias {
     no strict 'refs';
     for my $pkg ( ref $pkgs ? @{$pkgs} : $pkgs ) {
         next if $pkg !~ m{ \A \w+ (::\w+)* \z }xms;
-        *{ $base .'::' . $pkg .'::VERSION' }  = *{ $ns . '::VERSION'};
-        *{ $base .'::' . $pkg .'::Onesided' } = *{ $ns . '::Onesided'};
-        *{ $base .'::' . $pkg .'::Lexicon' }  = *{ $ns . '::Lexicon'};
-        @{ $base .'::' . $pkg .'::ISA' }      = ($ns);
+        *{ $base . '::' . $pkg . '::VERSION' }  = *{ $ns . '::VERSION' };
+        *{ $base . '::' . $pkg . '::Encoding' } = *{ $ns . '::Encoding' };
+        *{ $base . '::' . $pkg . '::Lexicon' }  = *{ $ns . '::Lexicon' };
+        @{ $base . '::' . $pkg . '::ISA' }      = ($ns);
     }
 }
 
@@ -89,8 +178,7 @@ sub remove_key_from_lexicons {
     my $idx = 0;
 
     for my $lex_hr ( @{ $lh->_lex_refs() } ) {
-        $lh->{'_removed_from_lexicons'}{$idx}{$key} = delete $lex_hr->{$key}
-          if exists $lex_hr->{$key};
+        $lh->{'_removed_from_lexicons'}{$idx}{$key} = delete $lex_hr->{$key} if exists $lex_hr->{$key};
         $idx++;
     }
 }
@@ -154,27 +242,135 @@ sub get {
     return;
 }
 
+sub get_language_tag_name {
+    my ( $lh, $tag, $in_locale_tongue ) = @_;
+    $tag ||= $lh->get_language_tag();
+
+    my $loc_obj = $lh->get_locales_obj( $in_locale_tongue ? () : ($tag) );
+
+    return $loc_obj->get_language_from_code($tag);
+}
+
+sub get_html_dir_attr {
+    my ( $lh, $raw_cldr, $is_tag ) = @_;
+
+    if ($is_tag) {
+        $raw_cldr = $lh->get_language_tag_character_orientation($raw_cldr);
+    }
+    else {
+        $raw_cldr ||= $lh->get_language_tag_character_orientation();
+    }
+
+    if ( $raw_cldr eq 'left-to-right' ) {
+        return 'ltr';
+    }
+    elsif ( $raw_cldr eq 'right-to-left' ) {
+        return 'rtl';
+    }
+
+    return;
+}
+
+sub get_locale_display_pattern {
+
+    # my ( $lh, $tag ) = @_;
+    # $tag ||= $lh->get_language_tag();
+
+    return Locales::DB::LocaleDisplayPattern::Tiny::get_locale_display_pattern( $_[1] || $_[0]->get_language_tag() );
+}
+
+sub get_language_tag_character_orientation {
+
+    # my ( $lh, $tag ) = @_;
+    # $tag ||= $lh->get_language_tag();
+
+    return Locales::DB::CharacterOrientation::Tiny::get_orientation( $_[1] || $_[0]->get_language_tag() );
+}
+
+sub text {
+
+    require Carp;
+
+    # Remember, this can fail.  Failure is controllable many ways.
+    Carp::croak 'text() requires a singlef parameter' unless @_ == 2;
+
+    my ( $handle, $phrase ) = splice( @_, 0, 2 );
+    Carp::confess('No handle/phrase') unless ( defined($handle) && defined($phrase) );
+
+    if ( !$handle->{'use_external_lex_cache'} ) {
+        Carp::carp("text() requires you to have 'use_external_lex_cache' enabled.");
+        return;
+    }
+
+    # backup $@ in case it it's still being used in the calling code.
+    # If no failures, we'll re-set it back to what it was later.
+    my $at = $@;
+
+    # Copy @_ case one of its elements is $@.
+    @_ = @_;
+
+    # Look up the value:
+
+    my $value;
+    foreach my $h_r ( @{ $handle->_lex_refs } ) {    # _lex_refs() caches itself
+
+        # DEBUG and warn "* Looking up \"$phrase\" in $h_r\n";
+        if ( exists $h_r->{$phrase} ) {
+
+            if ( ref( $h_r->{$phrase} ) ) {
+                Carp::carp("Previously compiled phrase ('use_external_lex_cache' enabled after phrase was compiled?)");
+            }
+
+            # DEBUG and warn "  Found \"$phrase\" in $h_r\n";
+            $value = $h_r->{$phrase};
+            last;
+        }
+
+        # extending packages need to be able to localize _AUTO and if readonly can't "local $h_r->{'_AUTO'} = 1;"
+        # but they can "local $handle->{'_external_lex_cache'}{'_AUTO'} = 1;"
+        elsif ( $phrase !~ m/^_/s and $h_r->{'_AUTO'} ) {
+
+            # it's an auto lex, and this is an autoable key!
+            # DEBUG and warn "  Automaking \"$phrase\" into $h_r\n";
+            $value = $phrase;
+            last;
+        }
+
+        # DEBUG > 1 and print "  Not found in $h_r, nor automakable\n";
+
+        # else keep looking
+    }
+
+    unless ( defined($value) ) {
+
+        # DEBUG and warn "! Lookup of \"$phrase\" in/under ", ref($handle) || $handle, " fails.\n";
+    }
+
+    $@ = $at;    # Put $@ back in case we altered it along the way.
+    return $value;
+}
+
 sub lang_names_hashref {
     my ( $lh, @langcodes ) = @_;
 
-    if ( !@langcodes ) {                          # they havn't specified any langcodes...
-        require File::Spec;                       # only needed here, so we don't use() it
+    if ( !@langcodes ) {    # they havn't specified any langcodes...
+        require File::Spec;    # only needed here, so we don't use() it
 
         my @search;
         my $path = $lh->get_base_class();
-        $path =~ s{::}{/}g;                       # !!!! make this File::Spec safe !! File::Spec->seperator() !-e
+        $path =~ s{::}{/}g;    # !!!! make this File::Spec safe !! File::Spec->separator() !-e
 
         if ( ref $lh->{'_lang_pm_search_paths'} eq 'ARRAY' ) {
             @search = @{ $lh->{'_lang_pm_search_paths'} };
         }
 
-        @search = @INC if !@search;               # they havn't told us where they are specifically
+        @search = @INC if !@search;    # they havn't told us where they are specifically
 
       DIR:
         for my $dir (@search) {
             my $lookin = File::Spec->catdir( $dir, $path );
             next DIR if !-d $lookin;
-            if (opendir my $dh, $lookin) {
+            if ( opendir my $dh, $lookin ) {
               PM:
                 for my $pm ( grep { /^\w+\.pm$/ } grep !/^\.+$/, readdir($dh) ) {
                     $pm =~ s{\.pm$}{};
@@ -187,31 +383,24 @@ sub lang_names_hashref {
         }
     }
 
-
-    require Locales;
-    my $loc_obj = Locales->new($lh->get_language_tag()) || Locales->new(substr( $lh->get_language_tag(), 0, 2 )) || Locales->new('en');
+    # Even though get_locales_obj() memoizes/caches/singletons itself we can still avoid a
+    # method call if we already have the Locales object that belongs to the handle's locale.
+    $lh->{'Locales.pm'}{'_main_'} ||= $lh->get_locales_obj();
 
     my $langname  = {};
     my $native    = wantarray && $Locales::VERSION > 0.06 ? {} : undef;
     my $direction = wantarray && $Locales::VERSION > 0.09 ? {} : undef;
 
-    for my $code ( 'en', @langcodes ) {                        # en since its "built in"
+    for my $code ( 'en', @langcodes ) {    # en since its "built in"
 
-        $langname->{$code} = $loc_obj->get_language_from_code($code,1);
+        $langname->{$code} = $lh->{'Locales.pm'}{'_main_'}->get_language_from_code( $code, 1 );
 
         if ( defined $native ) {
-            $native->{$code} = $loc_obj->get_native_language_from_code($code,1);
+            $native->{$code} = $lh->{'Locales.pm'}{'_main_'}->get_native_language_from_code( $code, 1 );
         }
 
         if ( defined $direction ) {
-            $direction->{$code} = $loc_obj->get_character_orientation_from_code($code); # do not force a value
-            if (!$direction->{$code}) {
-                # no direction defined, fallback to parent's if it has a parent language (i.e. ll_tt)
-                my ($ln,$tr) = Locales::split_tag($code);
-                if ($ln ne $code) {
-                    $direction->{$code} = $loc_obj->get_character_orientation_from_code($ln); # do not force a value
-                }
-            }
+            $direction->{$code} = $lh->{'Locales.pm'}{'_main_'}->get_character_orientation_from_code_fast($code);
         }
     }
 
@@ -252,8 +441,8 @@ sub add_lexicon_override_hash {
     if ( eval { require Sub::Todo } ) {
         goto &Sub::Todo::todo;
     }
-    else { 
-        $! = $cur_errno; 
+    else {
+        $! = $cur_errno;
         return;
     }
 }
@@ -393,263 +582,189 @@ sub list_available_locales {
 
     my $main_ns_dir = $lh->get_base_class_dir() || return;
 
+    # glob() is disabled in some environments
+    my @glob;
+    if ( opendir my $dh, $main_ns_dir ) {
+        @glob = map { ( m{([^/]+)\.pm$} && $1 ne 'Utils' ) ? $1 : () } readdir($dh);    #de-taint
+        closedir $dh;
+    }
+
     # return ($lh->get_alias_list($base)), grep { $_ ne 'Utils' }
-    return grep { $_ ne 'Utils' }
-      map {
-        my ($modified) = reverse( split( '/', $_ ) );
-        substr( $modified, -3, 3, '' );    # we know the last 3 are '.pm'
-                                           # see get_alias_list() above, $base ? ( $modified, $lh->get_alias_list($base . '::' . $modified) ) : $modified;
-        $modified;
-      } glob("$main_ns_dir/*.pm");
+    return sort @glob;
 }
 
-#### numf() w/ decimal ##
+#### CLDR aware quant()/numerate ##
+
+sub quant {
+    my ( $handle, $num, @forms ) = @_;
+
+    my $max_decimal_places = 3;
+
+    if ( ref($num) eq 'ARRAY' ) {
+        $max_decimal_places = $num->[1];
+        $num                = $num->[0];
+    }
+
+    # Even though get_locales_obj() memoizes/caches/singletons itself we can still avoid a
+    # method call if we already have the Locales object that belongs to the handle's locale.
+    $handle->{'Locales.pm'}{'_main_'} ||= $handle->get_locales_obj();
+
+    # numerate() is scalar context get_plural_form(), we need array context get_plural_form() here
+    my ( $string, $spec_zero ) = $handle->{'Locales.pm'}{'_main_'}->get_plural_form( $num, @forms );
+
+    # If you find a need for more than 1 %s please submit an rt w/ details
+    if ( $string =~ m/%s\b/ ) {
+        return sprintf( $string, $handle->numf( $num, $max_decimal_places ) );
+    }
+    elsif ( $num == 0 && $spec_zero ) {
+        return $string;
+    }
+    else {
+        $handle->numf( $num, $max_decimal_places ) . " $string";
+    }
+}
+
+sub numerate {
+    my ( $handle, $num, @forms ) = @_;
+
+    # Even though get_locales_obj() memoizes/caches/singletons itself we can still avoid a
+    # method call if we already have the Locales object that belongs to the handle's locale.
+    $handle->{'Locales.pm'}{'_main_'} ||= $handle->get_locales_obj();
+
+    return scalar( $handle->{'Locales.pm'}{'_main_'}->get_plural_form( $num, @forms ) );
+}
+
+#### CLDR aware quant()/numerate ##
+
+#### CLDR aware numf() w/ decimal ##
 
 sub numf {
-    my ( $handle, $num, $decimal_places ) = @_;
+    my ( $handle, $num, $max_decimal_places ) = @_;
 
-    if ( $num < 10_000_000_000 and $num > -10_000_000_000 and $num == int($num) ) {
-        $num += 0;
-    }
-    elsif ( defined $decimal_places && ( $num =~ m{^\d+\.\d+$} || $decimal_places eq '' ) ) {
-        $num += 0;
-    }
-    else {
-        $num = CORE::sprintf( '%G', $num );
-    }
-    while ( $num =~ s/^([-+]?\d+)(\d{3})/$1,$2/s ) { 1 }    # right from perlfaq5
+    # Even though get_locales_obj() memoizes/caches/singletons itself we can still avoid a
+    # method call if we already have the Locales object that belongs to the handle's locale.
+    $handle->{'Locales.pm'}{'_main_'} ||= $handle->get_locales_obj();
 
-    if ( defined $decimal_places && $decimal_places ne '' ) {
-        no warnings;                                        # Argument "%.3f" isn't numeric in int at
-        my $safe_decimal_places = abs( int($decimal_places) );
-        if ($safe_decimal_places) {
-            $num =~ s/(^\d{1,}\.\d{$safe_decimal_places})(.*$)/$1/;
-        }
-        elsif ( $safe_decimal_places eq $decimal_places ) {
-            $num =~ s/\.\d+$//;
-        }
-        else {
-            $num = CORE::sprintf( $decimal_places, $num );
-        }
-    }
-
-    $num =~ tr<.,><,.> if ref($handle) and $handle->{'numf_comma'};
-
-    return $num;
+    return $handle->{'Locales.pm'}{'_main_'}->get_formatted_decimal( $num, $max_decimal_places );
 }
 
-#### / numf() w/ decimal/formatter ##
-
-#### range support ##
-
-# DO NOT advertise this yet as it makes the lookup break
-#     key of '[foo,1_.._#]' becomes '[foo,_1,_2, ... _N]' on and on depending on length of args _N so its dynamic and can't be in lexicon
-# We could override _compile instead *if* we could get the lenth of the caller's @_ at that point (and rely that core always has @_ filled only with args at that point)
-# it'd be better if it was in Locale::Maketext: rt 37955
-
-sub maketext {
-    my ( $class, $key, @args ) = @_;
-
-    while ( $key =~ m{(_(\-?\d+).._(\-?\d+|\#))} ) {
-        my $rem = $1;
-        my $end = $3 eq '#' ? scalar(@args) : $3;
-        my $chg = '';
-
-        for my $n ( $2 .. $end ) {
-            next if $n == 0;
-            $chg .= "_$n,";
-        }
-
-        $chg =~ s/\,$//;
-
-        Locale::Maketext::DEBUG() and warn "RANGE: $rem -> $chg";
-
-        $key =~ s{\Q$rem\E}{$chg}g;
-    }
-
-    # if (exists $INC{'utf8.pm'}) {
-    #     utf8::is_utf8($key) or utf8::decode($key)
-    #     for( @args ) {
-    #         utf8::is_utf8($_) or utf8::decode($_);
-    #     }
-    # }
-
-    my $value = __maketext( $class, $key, @args );
-
-    # it'd be better if $Onesided support was in Locale::Maketext: rt 46051
-    if ( !defined $value || $value eq '' ) {
-
-        # use the class itself if available, then the base class
-        no strict 'refs';
-        for my $ns ( $class->get_language_class(), $class->get_base_class() ) {
-            if ( defined ${ $ns . '::Onesided' } ) {
-                if ( ${ $ns . '::Onesided' } ) {
-                    my $lex_ref = \%{ $ns . '::Lexicon' };
-                    if ($class->{'use_external_lex_cache'}) {
-                        $class->{'_external_lex_cache'}{$key} = $key;
-                    }
-                    else {
-                        $lex_ref->{$key} = $key;
-                    }
-                    
-                    return __maketext( $class, $key, @args );
-                }
-            }
-        }
-    }
-
-    return $value;
-}
-
-#### /range support ##
-
-###########################################################################
-## L::M::maketext() 1.13
-## UNDO once https://rt.cpan.org/Ticket/Display.html?id=46738 is done ##
-
-require Carp;
-my %isa_scan;
-
-sub __maketext {
-    # Remember, this can fail.  Failure is controllable many ways.
-    Carp::croak 'maketext requires at least one parameter' unless @_ > 1;
-
-    my($handle, $phrase) = splice(@_,0,2);
-    Carp::confess('No handle/phrase') unless (defined($handle) && defined($phrase));
-
-    # Don't interefere with $@ in case that's being interpolated into the msg.
-    local $@;
-
-    # Look up the value:
-    my $value;
-    if (exists $handle->{'_external_lex_cache'}{$phrase}) {
-        Locale::Maketext::DEBUG and warn "* Using external lex cache version of \"$phrase\"\n";
-        $value = $handle->{'_external_lex_cache'}{$phrase};
-    }
-    else {
-        foreach my $h_r (
-            @{  $isa_scan{ref($handle) || $handle} || $handle->_lex_refs  }
-        ) {        
-            Locale::Maketext::DEBUG and warn "* Looking up \"$phrase\" in $h_r\n";
-            if(exists $h_r->{$phrase}) {
-                Locale::Maketext::DEBUG and warn "  Found \"$phrase\" in $h_r\n";
-                unless(ref($value = $h_r->{$phrase})) {
-                    # Nonref means it's not yet compiled.  Compile and replace.
-                    if ($handle->{'use_external_lex_cache'}) {
-                        $value = $handle->{'_external_lex_cache'}{$phrase} = $handle->_compile($value);
-                    }
-                    else {
-                        $value = $h_r->{$phrase} = $handle->_compile($value);
-                    }
-                }
-                last;
-            }
-            elsif($phrase !~ m/^_/s and $h_r->{'_AUTO'}) {
-                # it's an auto lex, and this is an autoable key!
-                Locale::Maketext::DEBUG and warn "  Automaking \"$phrase\" into $h_r\n";
-                if ($handle->{'use_external_lex_cache'}) {
-                    $value = $handle->{'_external_lex_cache'}{$phrase} = $handle->_compile($phrase);
-                }
-                else {
-                    $value = $h_r->{$phrase} = $handle->_compile($phrase);
-                }
-                last;
-            }
-            Locale::Maketext::DEBUG>1 and print "  Not found in $h_r, nor automakable\n";
-            # else keep looking
-        }
-    }
-
-    unless(defined($value)) {
-        Locale::Maketext::DEBUG and warn "! Lookup of \"$phrase\" in/under ", ref($handle) || $handle, " fails.\n";
-        if(ref($handle) and $handle->{'fail'}) {
-            Locale::Maketext::DEBUG and warn "WARNING0: maketext fails looking for <$phrase>\n";
-            my $fail;
-            if(ref($fail = $handle->{'fail'}) eq 'CODE') { # it's a sub reference
-                return &{$fail}($handle, $phrase, @_);
-                # If it ever returns, it should return a good value.
-            }
-            else { # It's a method name
-                return $handle->$fail($phrase, @_);
-                # If it ever returns, it should return a good value.
-            }
-        }
-        else {
-            # All we know how to do is this;
-            Carp::croak("maketext doesn't know how to say:\n$phrase\nas needed");
-        }
-    }
-
-    return $$value if ref($value) eq 'SCALAR';
-    return $value unless ref($value) eq 'CODE';
-
-    {
-        local $SIG{'__DIE__'};
-        eval { $value = &$value($handle, @_) };
-    }
-    # If we make it here, there was an exception thrown in the
-    #  call to $value, and so scream:
-    if ($@) {
-        my $err = $@;
-        # pretty up the error message
-        $err =~ s{\s+at\s+\(eval\s+\d+\)\s+line\s+(\d+)\.?\n?}
-                 {\n in bracket code [compiled line $1],}s;
-        #$err =~ s/\n?$/\n/s;
-        Carp::croak "Error in maketexting \"$phrase\":\n$err as used";
-        # Rather unexpected, but suppose that the sub tried calling
-        # a method that didn't exist.
-    }
-    else {
-        return $value;
-    }
-}
-
-## /L::M 1.13
-###########################################################################
+#### / CLDR aware numf() w/ decimal/formatter ##
 
 #### more BN methods ##
 
 sub join {
     shift;
-    return CORE::join( shift, @_ );
+    return CORE::join( shift, map { ref($_) eq 'ARRAY' ? @{$_} : $_ } @_ );
+}
+
+sub list_and {
+    my $lh = shift;
+
+    # Even though get_locales_obj() memoizes/caches/singletons itself we can still avoid a
+    # method call if we already have the Locales object that belongs to the handle's locale.
+    $lh->{'Locales.pm'}{'_main_'} ||= $lh->get_locales_obj();
+
+    $lh->{'Locales.pm'}{'_main_'}->get_list_and( map { ref($_) eq 'ARRAY' ? @{$_} : $_ } @_ );
+}
+
+sub list_or {
+    my $lh = shift;
+
+    # Even though get_locales_obj() memoizes/caches/singletons itself we can still avoid a
+    # method call if we already have the Locales object that belongs to the handle's locale.
+    $lh->{'Locales.pm'}{'_main_'} ||= $lh->get_locales_obj();
+
+    $lh->{'Locales.pm'}{'_main_'}->get_list_or( map { ref($_) eq 'ARRAY' ? @{$_} : $_ } @_ );
 }
 
 sub list {
+    require Carp;
+    Carp::carp('list() is deprecated, use list_and() or list_or() instead');
+
     my $lh      = shift;
     my $com_sep = ', ';
     my $oxford  = ',';
     my $def_sep = '&';
 
     if ( ref($lh) ) {
-        $com_sep = $lh->{'list_seperator'}   if exists $lh->{'list_seperator'};
-        $oxford  = $lh->{'oxford_seperator'} if exists $lh->{'oxford_seperator'};
+        $com_sep = $lh->{'list_separator'}   if exists $lh->{'list_separator'};
+        $oxford  = $lh->{'oxford_separator'} if exists $lh->{'oxford_separator'};
         $def_sep = $lh->{'list_default_and'} if exists $lh->{'list_default_and'};
     }
 
     my $sep = shift || $def_sep;
     return if !@_;
 
-    if ( @_ == 1 ) {
-        return $_[0];
+    my @expanded = map { ref($_) eq 'ARRAY' ? @{$_} : $_ } @_;
+    if ( @expanded == 1 ) {
+        return $expanded[0];
     }
-    elsif ( @_ == 2 ) {
-        return CORE::join( " $sep ", @_ );
+    elsif ( @expanded == 2 ) {
+        return CORE::join( " $sep ", @expanded );
     }
     else {
-        my $last = pop @_;
-        return CORE::join( $com_sep, @_ ) . "$oxford $sep $last";
+        my $last = pop @expanded;
+        return CORE::join( $com_sep, @expanded ) . "$oxford $sep $last";
     }
+}
+
+sub output_asis {
+    return $_[1];
+}
+
+sub asis {
+    return $_[0]->output( 'asis', $_[1] );    # this allows for embedded methods but still called via [asis,...] instead of [output,asis,...]
+}
+
+sub comment {
+    return '';
+}
+
+sub is_future {
+    my ( $lh, $dt, $future, $past, $current, $current_type ) = @_;
+
+    if ( $dt !~ m/\A[0-9]+\z/ ) {
+        $dt = __get_dt_obj_from_arg( $dt, 0 );
+        $dt = $dt->epoch();
+    }
+
+    if ($current) {
+        if ( !ref $dt ) {
+            $dt = __get_dt_obj_from_arg( $dt, 0 );
+        }
+        $current_type ||= 'hour';
+
+        if ( $current_type eq 'day' ) {
+
+            # TODO implement
+        }
+        elsif ( $current_type eq 'minute' ) {
+
+            # TODO implement
+        }
+        else {
+
+            # TODO implement
+        }
+    }
+
+    return ref $dt ? $dt->epoch() : $dt > time() ? $future : $past;
+}
+
+sub __get_dt_obj_from_arg {
+    require DateTime;
+    return
+       !defined $_[0] ? DateTime->now()
+      : ref $_[0] eq 'HASH' ? DateTime->new( %{ $_[0] } )
+      : $_[0] =~ m{ \A (\d+ (?: [.] \d+ )? ) (?: [:] (.*) )? \z }xms ? DateTime->from_epoch( 'epoch' => $1, 'time_zone' => ( $2 || 'UTC' ) )
+      : !ref $_[0] ? DateTime->now( 'time_zone' => ( $_[0] || 'UTC' ) )
+      : $_[1]      ? $_[0]->clone()
+      :              $_[0];
 }
 
 sub datetime {
     my ( $lh, $dta, $str ) = @_;
-    require DateTime;
-    my $dt =
-       !defined $dta ? DateTime->now()
-      : ref $dta eq 'HASH' ? DateTime->new( %{$dta} )
-      : $dta =~ m{ \A (\d+ (?: [.] \d+ )? ) (?: [:] (.*) )? \z }xms ? DateTime->from_epoch( 'epoch' => $1, 'time_zone' => ( $2 || 'UTC' ) )
-      : !ref $dta ? DateTime->now( 'time_zone' => ( $dta || 'UTC' ) )
-      :             $dta->clone();
+    my $dt = __get_dt_obj_from_arg( $dta, 1 );
 
     $dt->{'locale'} = DateTime::Locale->load( $lh->language_tag() );
     my $format = ref $str eq 'CODE' ? $str->($dt) : $str;
@@ -659,13 +774,87 @@ sub datetime {
         }
     }
 
-    return $dt->strftime( $format || $dt->{'locale'}->long_date_format() );
+    return $dt->format_cldr( $format || $dt->{'locale'}->date_format_long() );
 }
 
+sub output_nbsp {
+
+    # Use grapheme here since the NO-BREAK SPACE is visually ambiguous when typed (e.g. OSX option-space)
+
+    # The character works the same as the entity so checking the context doesn't gain us much.
+    # Any interest in being able to specify a mode that you might want the entity under HTML mode?
+    # my ($lh, $context_aware) = @_;
+    # if ($context_aware) {
+    #     return $lh->context_is_html() ? '&nbsp;' : "\xC2\xA0";
+    # }
+    # else {
+    #     return "\xC2\xA0";
+    # }
+    # or simply do the entity:
+    # return $_[0]->context_is_html() ? '&nbsp;' : "\xC2\xA0";
+
+    return "\xC2\xA0";
+}
+
+my $space;
+
 sub format_bytes {
-    shift;
-    require Number::Bytes::Human;
-    return Number::Bytes::Human::format_bytes(@_);
+    my ( $lh, $bytes ) = @_;
+    $bytes ||= 0;
+
+    my $absnum = abs($bytes);
+
+    $space ||= $lh->output_nbsp();    # avoid method call if we already have it
+
+    # override if you want different behavior or more flexibility, as-is these are the ideas behind it:
+    #     * Calculate via 1024's not 1000's
+    #     * Max decimals set to 2 (this is for human consumption not math operation)
+    #     * Either 'n byte/n bytes' (since there is no good universal suffix for "byte")
+    #       or 'n . non-breaking-space . SI-SUFFIX' (Yes technically MiB is more accurate
+    #         here than MB, but for now it has to remain this way for legacy reasons)
+    #     * simple math/logic is done here so that there is no need to bring in a module
+    if ( $absnum < 1024 ) {
+
+        # This is a special, internal-to-format_bytes, phrase: developers will not have to deal with this phrase directly.
+        return $lh->maketext( '[quant,_1,%s byte,%s bytes]', $bytes );    # the space between the '%s' and the 'b' is a non-break space (e.g. option-spacebar, not spacebar)
+                                                                            # We do not use $space or \xC2\xA0 since:
+                                                                            #   * parsers would need to know how to interpolate them in order to work with the phrase in the context of the system
+                                                                            #   * the non-breaking space character behaves as you'd expect it's various representations to.
+                                                                            # Should a second instance of this sort of thing happen we can revisit the idea of adding [comment] in the phrase itself or perhaps supporting an embedded call to [output,nbsp].
+    }
+    elsif ( $absnum < 1048576 ) {
+        return $lh->numf( ( $bytes / 1024 ), 2 ) . $space . 'KB';
+    }
+    elsif ( $absnum < 1073741824 ) {
+        return $lh->numf( ( $bytes / 1048576 ), 2 ) . $space . 'MB';
+    }
+    elsif ( $absnum < 1099511627776 ) {
+        return $lh->numf( ( $bytes / 1073741824 ), 2 ) . $space . 'GB';
+    }
+    elsif ( $absnum < 1125899906842624 ) {
+        return $lh->numf( ( $bytes / 1099511627776 ), 2 ) . $space . 'TB';
+    }
+    elsif ( $absnum < ( 1125899906842624 * 1024 ) ) {
+        return $lh->numf( ( $bytes / 1125899906842624 ), 2 ) . $space . 'PB';
+    }
+    elsif ( $absnum < ( 1125899906842624 * 1024 * 1024 ) ) {
+        return $lh->numf( ( $bytes / ( 1125899906842624 * 1024 ) ), 2 ) . $space . 'EB';
+    }
+    elsif ( $absnum < ( 1125899906842624 * 1024 * 1024 * 1024 ) ) {
+        return $lh->numf( ( $bytes / ( 1125899906842624 * 1024 * 1024 ) ), 2 ) . $space . 'ZB';
+    }
+    else {
+
+        # any reason to do the commented out code? if so please rt w/ details!
+        # elsif ( $absnum < ( 1125899906842624 * 1024 * 1024 * 1024 * 1024 ) ) {
+        return $lh->numf( ( $bytes / ( 1125899906842624 * 1024 * 1024 * 1024 ) ), 2 ) . $space . 'YB';
+
+        # }
+        # else {
+        #
+        #    # This should never happen but just in case lets show something:
+        #    return $lh->maketext( '[quant,_1,%s byte,%s bytes]', $bytes ); # See info about this above/incorporate said info should this ever be uncommented
+    }
 }
 
 sub convert {
@@ -674,21 +863,54 @@ sub convert {
     return Math::Units::convert(@_);
 }
 
+sub is_defined {
+    my ( $lh, $value, $is_defined, $not_defined, $is_defined_but_false ) = @_;
+
+    return __proc_string_with_embedded_under_vars($not_defined) if !defined $value;
+
+    if ( defined $is_defined_but_false && !$value ) {
+        return __proc_string_with_embedded_under_vars($is_defined_but_false);
+    }
+    else {
+        return __proc_string_with_embedded_under_vars($is_defined);
+    }
+}
+
 sub boolean {
     my ( $lh, $boolean, $true, $false, $null ) = @_;
     if ($boolean) {
-        return $true;
+        return __proc_string_with_embedded_under_vars($true);
     }
     else {
         if ( !defined $boolean && defined $null ) {
-            return $null;
+            return __proc_string_with_embedded_under_vars($null);
         }
-        return $false;
+        return __proc_string_with_embedded_under_vars($false);
     }
+}
+
+sub __proc_string_with_embedded_under_vars {
+    my $str = $_[0];
+    return $str if $str !~ m/\_(\-?[0-9]+)/;
+    my @args = __caller_args( $_[1] );    # this way be dragons
+    $str =~ s/\_(\-?[0-9]+)/$args[$1]/g;
+    return $str;
+}
+
+# sweet sweet magic stolen from Devel::Caller
+sub __caller_args {
+
+    package DB;
+    () = caller( $_[0] + 3 );
+    return @DB::args;
 }
 
 sub output {
     my ( $lh, $output_function, $string, @output_function_args ) = @_;
+
+    $string =~ s/(su[bp])\(((?:\\\)|[^\)])+?)\)/my $s=$2;my $m="output_$1";$s=~s{\\\)}{\)}g;$lh->$m($s)/eg;
+    $string =~ s/chr\(((?:\d+|[\S]))\)/$lh->output_chr($1)/eg;
+
     if ( my $cr = $lh->can( 'output_' . $output_function ) ) {
         return $cr->( $lh, $string, @output_function_args );
     }
@@ -698,64 +920,196 @@ sub output {
             $! = Sub::Todo::get_errno_func_not_impl();
         }
         else {
-            $! = $cur_errno; 
+            $! = $cur_errno;
         }
         return $string;
     }
 }
 
+sub output_encode_puny {
+    require Net::LibIDN;
+
+    if ( $_[1] =~ m/\@/ ) {
+        my ( $nam, $dom ) = split( /@/, $_[1], 2 );
+
+        # TODO: ? multiple @ signs ...
+        # my ($dom,$nam) = split(/\@/,reverse($_[1]),2);
+        #        $dom = reverse($dom);
+        #        $nam = reverse($nam);
+        return Net::LibIDN::idn_to_ascii( $nam, 'utf-8' ) . '@' . Net::LibIDN::idn_to_ascii( $dom, 'utf-8' );
+    }
+
+    # this will act funny if there are @ symbols:
+    return Net::LibIDN::idn_to_ascii( $_[1], 'utf-8' );
+}
+
+sub output_decode_puny {
+    require Net::LibIDN;
+
+    if ( $_[1] =~ m/\@/ ) {
+        my ( $nam, $dom ) = split( /@/, $_[1], 2 );
+
+        # TODO: ? multiple @ signs ...
+        # my ($dom,$nam) = split(/\@/,reverse($_[1]),2);
+        #        $dom = reverse($dom);
+        #        $nam = reverse($nam);
+        return Net::LibIDN::idn_to_unicode( $nam, 'utf-8' ) . '@' . Net::LibIDN::idn_to_unicode( $dom, 'utf-8' );
+    }
+
+    # this will act funny if there are @ symbols:
+    return Net::LibIDN::idn_to_unicode( $_[1], 'utf-8' );
+}
+
+my $has_encode;    # checking for Encode this way facilitates only checking @INC once for the module on systems that do not have Encode
+
 sub output_chr {
     my ( $lh, $chr_num ) = @_;
-    return if $chr_num !~ m/\A\d+\z/;
-    my $chr =  chr($chr_num);
-    if ($chr_num > 127) {
-         require Encode;
-         $chr = Encode::encode($lh->encoding(), $chr);
+
+    if ( $chr_num !~ m/\A\d+\z/ ) {
+        return if length($chr_num) != 1;
+        return $chr_num if !$lh->context_is_html();
+
+        return
+            $chr_num eq '"' ? '&quot;'
+          : $chr_num eq '&' ? '&amp;'
+          : $chr_num eq "'" ? '&#39;'
+          : $chr_num eq '<' ? '&lt;'
+          : $chr_num eq '>' ? '&gt;'
+          :                   $chr_num;
     }
-    
-    if ( exists $lh->{'-t-STDIN'} ? $lh->{'-t-STDIN'} : -t STDIN ) {
+    return if $chr_num !~ m/\A\d+\z/;
+    my $chr = chr($chr_num);
+
+    # perldoc chr: Note that characters from 128 to 255 (inclusive) are by default internally not encoded as UTF-8 for backward compatibility reasons.
+    if ( $chr_num > 127 ) {
+
+        # checking for Encode this way facilitates only checking @INC once for the module on systems that do not have Encode
+        if ( !defined $has_encode ) {
+            $has_encode = 0;
+            eval { require Encode; $has_encode = 1; };
+        }
+
+        # && $chr_num < 256) { # < 256 still needs Encode::encode()d in order to avoid "Wide character" warning
+        if ($has_encode) {
+            $chr = Encode::encode( $lh->encoding(), $chr );
+        }
+
+        # elsif (defined &utf8::???) { ??? }
+        else {
+
+            # This binmode trick can cause chr() to render and not have a "Wide character" warning but ... yikes ...:
+            #     eval { binmode(STDOUT, ":utf8") } - eval beacuse perl 5.6 "Unknown discipline ':utf8' at ..." which means this would be pointless in addition to scary
+
+            # warn "Encode.pm is not available so chr($chr_num) may or may not be encoded properly.";
+
+            # chr() has issues (e.g. display problems) on any perl with or without Encode.pm (esspecially when $chr_num is 128 .. 255).
+            # On 5.6 perl (i.e. no Encode.pm) \x{00AE} works so:
+            #    sprintf('%04X', $chr_num); # e.g. turn '174' into '00AE'
+            # It could be argued that this only needs done when $chr_num < 256 but it works so leave it like this for consistency and in case it is needed under specific circumstances
+
+            $chr = eval '"\x{' . sprintf( '%04X', $chr_num ) . '}"';
+        }
+    }
+
+    if ( !$lh->context_is_html() ) {
         return $chr;
     }
     else {
-        return $chr_num == 34 || $chr_num == 147 || $chr_num == 148 ? '&quot;'
-             : $chr_num == 38                                       ? '&amp;'
-             : $chr_num == 39 || $chr_num == 145 || $chr_num == 146 ? '&#39;'
-             : $chr_num == 60                                       ? '&lt;'
-             : $chr_num == 62                                       ? '&gt;'
-             :                                                        $chr
-             ;
+        return
+            $chr_num == 34 || $chr_num == 147 || $chr_num == 148 ? '&quot;'
+          : $chr_num == 38 ? '&amp;'
+          : $chr_num == 39 || $chr_num == 145 || $chr_num == 146 ? '&#39;'
+          : $chr_num == 60 ? '&lt;'
+          : $chr_num == 62 ? '&gt;'
+          :                  $chr;
     }
 }
 
 sub output_class {
     my ( $lh, $string, @classes ) = @_;
+    $string = __proc_string_with_embedded_under_vars( $string, 1 );
+    return $string if $lh->context_is_plain();
+
     # my $class_str = join(' ', @classes); # in case $" is hosed?
     # TODO maybe: use @classes to get ANSI color map of some sort
-    return ( exists $lh->{'-t-STDIN'} ? $lh->{'-t-STDIN'} : -t STDIN ) ? "\e[1m$string\e[0m" : qq{<span class="@classes">$string</span>};
+    return $lh->context_is_ansi() ? "\e[1m$string\e[0m" : qq{<span class="@classes">$string</span>};
+}
+
+sub output_asis_for_tests {
+    my ( $lh, $string ) = @_;
+    $string = __proc_string_with_embedded_under_vars( $string, 1 );
+    return $string;
+}
+
+sub output_attr {
+    my ( $lh, $string, %attr ) = @_;
+    $string = __proc_string_with_embedded_under_vars( $string, 1 );
+    return $string if !$lh->context_is_html();
+
+    my $attr = '';
+    for my $name ( keys %attr ) {
+        $attr .= qq{ $name="$attr{$name}"};
+    }
+
+    return qq{<span$attr>$string</span>};
+}
+
+sub output_abbr {
+    my ( $lh, $abbr, $full ) = @_;
+    return !$lh->context_is_html() ? "$abbr ($full)" : qq{<abbr title="$full">$abbr</abbr>};
+}
+
+sub output_acronym {
+    my ( $lh, $acronym, $full ) = @_;
+    return !$lh->context_is_html() ? "$acronym ($full)" : qq{<acronym title="$full">$acronym</acronym>};
+}
+
+sub output_sup {
+    my ( $lh, $string ) = @_;
+    $string = __proc_string_with_embedded_under_vars( $string, 1 );
+    return !$lh->context_is_html() ? $string : qq{<sup>$string</sup>};
+}
+
+sub output_sub {
+    my ( $lh, $string ) = @_;
+    $string = __proc_string_with_embedded_under_vars( $string, 1 );
+    return !$lh->context_is_html() ? $string : qq{<sub>$string</sub>};
 }
 
 sub output_underline {
     my ( $lh, $string ) = @_;
-    return ( exists $lh->{'-t-STDIN'} ? $lh->{'-t-STDIN'} : -t STDIN ) ? "\e[4m$string\e[0m" : qq{<span style="text-decoration: underline">$string</span>};
+    $string = __proc_string_with_embedded_under_vars( $string, 1 );
+    return $string if $lh->context_is_plain();
+    return $lh->context_is_ansi() ? "\e[4m$string\e[0m" : qq{<span style="text-decoration: underline">$string</span>};
 }
 
 sub output_strong {
     my ( $lh, $string ) = @_;
-    return ( exists $lh->{'-t-STDIN'} ? $lh->{'-t-STDIN'} : -t STDIN ) ? "\e[1m$string\e[0m" : "<strong>$string</strong>";
+    $string = __proc_string_with_embedded_under_vars( $string, 1 );
+    return $string if $lh->context_is_plain();
+    return $lh->context_is_ansi() ? "\e[1m$string\e[0m" : "<strong>$string</strong>";
 }
 
 sub output_em {
     my ( $lh, $string ) = @_;
+    $string = __proc_string_with_embedded_under_vars( $string, 1 );
+    return $string if $lh->context_is_plain();
 
     # italic code 3 is specified in ANSI X3.64 and ECMA-048 but are not commonly supported by most displays and emulators, but we can try!
-    return ( exists $lh->{'-t-STDIN'} ? $lh->{'-t-STDIN'} : -t STDIN ) ? "\e[3m$string\e[0m" : "<em>$string</em>";
+    return $lh->context_is_ansi() ? "\e[3m$string\e[0m" : "<em>$string</em>";
 }
 
 sub output_url {
-    my ( $lh, $url, %output_config ) = @_;
+    my ( $lh, $url, @args ) = @_;
+
+    my ( $br_mod, %output_config ) = @args % 2 ? @args : ( undef, @args );
 
     my $return = $url;
-    if ( ( exists $lh->{'-t-STDIN'} ? $lh->{'-t-STDIN'} : -t STDIN ) ) {
+    if ( !$lh->context_is_html() ) {
+        if ($br_mod) {
+            return "$br_mod ($url)";
+        }
+
         if ( exists $output_config{'plain'} ) {
             if ( my @count = $output_config{'plain'} =~ m{(\%s)\b}g ) {
                 my $count = @count;
@@ -771,14 +1125,128 @@ sub output_url {
         }
     }
     else {
-        $output_config{'html'} ||= $url;
+        $output_config{'html'} ||= $br_mod || $url;
+        my $attr = '';
+        for my $name ( keys %output_config ) {
+            next if $name eq 'html' || $name eq 'plain' || $name eq '_type';
+            $attr .= qq{ $name="$output_config{$name}"};
+        }
+
         $return = exists $output_config{'_type'}
-          && $output_config{'_type'} eq 'offsite' ? qq{<a target="_blank" class="offsite" href="$url">$output_config{'html'}</a>} : qq{<a href="$url">$output_config{'html'}</a>};
+          && $output_config{'_type'} eq 'offsite' ? qq{<a$attr target="_blank" class="offsite" href="$url">$output_config{'html'}</a>} : qq{<a$attr href="$url">$output_config{'html'}</a>};
     }
 
     return $return;
 }
 
 #### / more BN methods ##
+
+#### output context methods ##
+
+sub set_context_html {
+    my ($lh) = @_;
+    my $cur = $lh->get_context();
+    $lh->set_context('html');
+    return if !$lh->context_is_html();
+    return $cur;
+}
+
+sub set_context_ansi {
+    my ($lh) = @_;
+    my $cur = $lh->get_context();
+    $lh->set_context('ansi');
+    return if !$lh->context_is_ansi();
+    return $cur;
+}
+
+sub set_context_plain {
+    my ($lh) = @_;
+    my $cur = $lh->get_context();
+    $lh->set_context('plain');
+    return if !$lh->context_is_plain();
+    return $cur;
+}
+
+my %contexts = (
+    'plain' => undef(),
+    'ansi'  => 1,
+    'html'  => 0,
+);
+
+sub set_context {
+    my ( $lh, $context ) = @_;
+
+    if ( !$context ) {
+        require IO::Interactive::Tiny;
+        $lh->{'-t-STDIN'} = IO::Interactive::Tiny::is_interactive() ? 1 : 0;
+    }
+    elsif ( exists $contexts{$context} ) {
+        $lh->{'-t-STDIN'} = $contexts{$context};
+    }
+    else {
+        require Carp;
+        local $Carp::CarpLevel = 1;
+        Carp::carp("Given context '$context' is unknown.");
+        $lh->{'-t-STDIN'} = $context;
+    }
+}
+
+sub context_is_html {
+    return $_[0]->get_context() eq 'html';
+}
+
+sub context_is_ansi {
+    return $_[0]->get_context() eq 'ansi';
+}
+
+sub context_is_plain {
+    return $_[0]->get_context() eq 'plain';
+}
+
+sub context_is {
+    return $_[0]->get_context() eq $_[1];
+}
+
+sub get_context {
+    my ($lh) = @_;
+
+    if ( !exists $lh->{'-t-STDIN'} ) {
+        $lh->set_context();
+    }
+
+    return 'plain' if !defined $lh->{'-t-STDIN'};
+    return 'ansi'  if $lh->{'-t-STDIN'};
+    return 'html'  if !$lh->{'-t-STDIN'};
+
+    # We don't carp "Given context '...' is unknown." here since we assume if they explicitly set it then they have a good reason to.
+    # If it was an accident the set_contex() will have carp()'d already, if they set the variable directly then they're doing it wrong ;)
+    return $lh->{'-t-STDIN'};
+}
+
+sub maketext_html_context {
+    my ( $lh, @mt_args ) = @_;
+    my $cur = $lh->set_context_html();
+    my $res = $lh->maketext(@mt_args);
+    $lh->set_context($cur);
+    return $res;
+}
+
+sub maketext_ansi_context {
+    my ( $lh, @mt_args ) = @_;
+    my $cur = $lh->set_context_ansi();
+    my $res = $lh->maketext(@mt_args);
+    $lh->set_context($cur);
+    return $res;
+}
+
+sub maketext_plain_context {
+    my ( $lh, @mt_args ) = @_;
+    my $cur = $lh->set_context_plain();
+    my $res = $lh->maketext(@mt_args);
+    $lh->set_context($cur);
+    return $res;
+}
+
+#### / output context methods ###
 
 1;
