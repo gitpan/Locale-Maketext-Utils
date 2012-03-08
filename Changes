@@ -1,12 +1,27 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.21  Fri Mar 2 11:31:57 2012
+    - only do embedded methods when the string is defined and has a ( in it
+    - added output_segment, output_fragment, and output_img
+    - Added get_asset(), get_asset_file(), and get_asset_dir()
+    - used 'cache' key for, well, caching data. Added flush_cache() to enable working w/ it
+    - Allow embedded args in output,url’s 'html' and 'plain' values
+    - Added numf() to list of embeddable methods
+    - add &shy; for chr(173) in html context so its visible
+    - Initial Locale::Maketext::Utils::Phrase::Norm and company
+    - Put conceptual L::M::U::Phrase::Core in tarball–not tested, may change drastically or go away completely
+    - added "arbitrary attributes" to appropriate output methods: 
+        e.g. key,value,pairs,that,add,clarity,to,phrase[,_N] 
+            - where _N is a hashref of key/value pairs important to the caller but essentially irrelevant to the meaning
+    - rt 74127: Change a test to use like() to (hopefully) pass on the oddball machine and if not have more useful output
+    - rt 74125: POD typo
+    - rt 74126: removed note-to-self left in Changelog for 0.20 
+    - rt 74603: Pass max decimal length to quant() used in format_bytes()
+    - rt 74604: Add max decimal length to format_bytes
+    - rt 74337: handle '' arg, fix datetime() POD, added current_year()
+    - perltidy all
+
 0.20  Thu Jan 12 23:32:03 CST 2012
-
-- # from internal version: fixed POD typo 'short circuit' && removed graphemehash/function
-- # Remove: get_grapheme_helper_hashref() Cpanel::Grapheme, already a case?
-- #   (move to where it is needed in parser or incorporate into case 52784)
-- # rt's
-
     - Removed $Onesided
     - add 'use_external_lex_cache' support
     - finally moved datetime() to CLDR

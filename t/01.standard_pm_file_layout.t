@@ -1,20 +1,20 @@
 use Test::More tests => 4;
 
-BEGIN { 
-   chdir 't';
-   unshift @INC, qw(lib ../lib);
-   use_ok('Locale::Maketext::Utils');
-   use_ok('MyTestLocale');
-};
+BEGIN {
+    chdir 't';
+    unshift @INC, qw(lib ../lib);
+    use_ok('Locale::Maketext::Utils');
+    use_ok('MyTestLocale');
+}
 
 my $lh = MyTestLocale->get_handle('fr');
 
-ok($lh->get_base_class_dir(). '.pm' eq $INC{'MyTestLocale.pm'}, 'get_base_class_dir() returns the correct path');
+ok( $lh->get_base_class_dir() . '.pm' eq $INC{'MyTestLocale.pm'}, 'get_base_class_dir() returns the correct path' );
 
 is_deeply(
-   [ sort $lh->list_available_locales() ],
-   [qw(es fr)],
-   'list_available_locales() returns correct langtags based on "Standard .pm file" file system'
+    [ sort $lh->list_available_locales() ],
+    [qw(es fr pt_br)],
+    'list_available_locales() returns correct langtags based on "Standard .pm file" file system'
 );
 
 # TODO, tests for this sort of madness

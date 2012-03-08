@@ -9,6 +9,8 @@ WriteMakefile(
         'DateTime'          => 0,
         'Net::LibIDN'       => 0,
         'IO::Interactive::Tiny' => 0,
+        'Module::Want' => 0,
+        'Encode' => 0,
     },
     ($] >= 5.005 ?   
       (ABSTRACT_FROM  => 'lib/Locale/Maketext/Utils.pod', 

@@ -3,10 +3,10 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.20';
+$Locale::Maketext::Utils::VERSION = '0.21';
 
 use Locale::Maketext 1.21 ();
-use Locales 0.25 ();
+use Locales 0.25          ();
 use Locales::DB::CharacterOrientation::Tiny ();
 use Locales::DB::LocaleDisplayPattern::Tiny ();
 
@@ -132,28 +132,28 @@ sub init {
 sub makethis {
     my ( $lh, $phrase, @phrase_args ) = @_;
 
-    $lh->{'_makethis_cache'}{$phrase} ||= $lh->_compile($phrase);
+    $lh->{'cache'}{'makethis'}{$phrase} ||= $lh->_compile($phrase);
 
-    my $type = ref( $lh->{'_makethis_cache'}{$phrase} );
+    my $type = ref( $lh->{'cache'}{'makethis'}{$phrase} );
 
     if ( $type eq 'SCALAR' ) {
-        return ${ $lh->{'_makethis_cache'}{$phrase} };
+        return ${ $lh->{'cache'}{'makethis'}{$phrase} };
     }
     elsif ( $type eq 'CODE' ) {
-        return $lh->{'_makethis_cache'}{$phrase}->( $lh, @phrase_args );
+        return $lh->{'cache'}{'makethis'}{$phrase}->( $lh, @phrase_args );
     }
     else {
 
         # ? carp() ?
-        return $lh->{'_makethis_cache'}{$phrase};
+        return $lh->{'cache'}{'makethis'}{$phrase};
     }
 }
 
 # We do this because we do not want the language semantics of $lh
 sub makethis_base {
     my ($lh) = @_;
-    $lh->{'base_class_pseudo_object'} ||= bless( {}, $lh->get_base_class() );    # this allows to have a seperate cache of compiled phrases
-    return $lh->{'base_class_pseudo_object'}->makethis( @_[ 1 .. $#_ ] );
+    $lh->{'cache'}{'makethis_base'} ||= bless( {}, $lh->get_base_class() );    # this allows to have a seperate cache of compiled phrases
+    return $lh->{'cache'}{'makethis_base'}->makethis( @_[ 1 .. $#_ ] );
 }
 
 sub make_alias {
@@ -593,6 +593,69 @@ sub list_available_locales {
     return sort @glob;
 }
 
+sub get_asset {
+    my ( $lh, $code, $tag ) = @_;                                                       # No caching since $code can do anything.
+
+    my $loc_obj = $lh->get_locales_obj($tag);
+
+    my $ret;
+    my $loc;                                                                            # buffer
+    for $loc ( $loc_obj->get_fallback_list( $lh->{'Locales.pm'}{'get_fallback_list_special_lookup_coderef'} ) ) {
+
+        # allow $code to be a soft ref?
+        # no strict 'refs';
+        $ret = $code->($loc);
+        last if defined $ret;
+    }
+
+    return $ret if defined $ret;
+    return;
+}
+
+sub get_asset_file {
+    my ( $lh, $find, $return ) = @_;
+    $return = $find if !defined $return;
+
+    return $lh->{'cache'}{'get_asset_file'}{$find}{$return} if exists $lh->{'cache'}{'get_asset_file'}{$find}{$return};
+
+    $lh->{'cache'}{'get_asset_file'}{$find}{$return} = $lh->get_asset(
+        sub {
+            return sprintf( $return, $_[0] ) if -f sprintf( $find, $_[0] );
+            return;
+        }
+    );
+
+    return $lh->{'cache'}{'get_asset_file'}{$find}{$return} if defined $lh->{'cache'}{'get_asset_file'}{$find}{$return};
+    return;
+}
+
+sub get_asset_dir {
+    my ( $lh, $find, $return ) = @_;
+    $return = $find if !defined $return;
+
+    return $lh->{'cache'}{'get_asset_dir'}{$find}{$return} if exists $lh->{'cache'}{'get_asset_dir'}{$find}{$return};
+
+    $lh->{'cache'}{'get_asset_dir'}{$find}{$return} = $lh->get_asset(
+        sub {
+            return sprintf( $return, $_[0] ) if -d sprintf( $find, $_[0] );
+            return;
+        }
+    );
+
+    return $lh->{'cache'}{'get_asset_dir'}{$find}{$return} if defined $lh->{'cache'}{'get_asset_dir'}{$find}{$return};
+    return;
+}
+
+sub flush_cache {
+    my ( $lh, $which ) = @_;
+    if ( defined $which ) {
+        return delete $lh->{'cache'}{$which};
+    }
+    else {
+        return delete $lh->{'cache'};
+    }
+}
+
 #### CLDR aware quant()/numerate ##
 
 sub quant {
@@ -651,6 +714,26 @@ sub numf {
 #### / CLDR aware numf() w/ decimal/formatter ##
 
 #### more BN methods ##
+
+# W1301 revision 1:
+#   [value] was a proposed way to avoid ambiguous '_thisthing' keys by "tagging" a phrase
+#   as having a value different from the key while keeping it self-documenting:
+#     '[value] Description of foo, arguments are …'
+# sub value {
+#      my ($lh, @contexts) = @_;
+#
+#      return '' if !@contexts; # must be for all contexts, cool
+#
+#      my $context = $lh->get_context();
+#
+#      if (!grep { $context eq $_ } @contexts) {
+#          require Carp;
+#          local $Carp::CarpLevel = 1;
+#          my $context_csv = join(',',@contexts);
+#          Carp::carp("The current context “$context” is not supported by the phrase ([value,$context_csv])");
+#      }
+#      return '';
+# }
 
 sub join {
     shift;
@@ -754,12 +837,16 @@ sub is_future {
 sub __get_dt_obj_from_arg {
     require DateTime;
     return
-       !defined $_[0] ? DateTime->now()
+       !defined $_[0] || $_[0] eq '' ? DateTime->now()
       : ref $_[0] eq 'HASH' ? DateTime->new( %{ $_[0] } )
       : $_[0] =~ m{ \A (\d+ (?: [.] \d+ )? ) (?: [:] (.*) )? \z }xms ? DateTime->from_epoch( 'epoch' => $1, 'time_zone' => ( $2 || 'UTC' ) )
       : !ref $_[0] ? DateTime->now( 'time_zone' => ( $_[0] || 'UTC' ) )
       : $_[1]      ? $_[0]->clone()
       :              $_[0];
+}
+
+sub current_year {
+    $_[0]->datetime( '', 'YYYY' );
 }
 
 sub datetime {
@@ -776,6 +863,17 @@ sub datetime {
 
     return $dt->format_cldr( $format || $dt->{'locale'}->date_format_long() );
 }
+
+# undocumented for now, if they get approved:
+#   - add POD
+#   - add tests
+#   - incorporate this into phrase checker classes Locale::Maketext::Utils::Phrase::Norm::Ampersand and Locale::Maketext::Utils::Phrase::Norm::Markup
+#   - update best practice docs
+sub output_amp  { return $_[0]->output_chr(38) }
+sub output_lt   { return $_[0]->output_chr(60) }
+sub output_gt   { return $_[0]->output_chr(62) }
+sub output_apos { return $_[0]->output_chr(39) }
+sub output_quot { return $_[0]->output_chr(34) }
 
 sub output_nbsp {
 
@@ -799,8 +897,15 @@ sub output_nbsp {
 my $space;
 
 sub format_bytes {
-    my ( $lh, $bytes ) = @_;
+    my ( $lh, $bytes, $max_decimal_place ) = @_;
     $bytes ||= 0;
+
+    if ( !defined $max_decimal_place ) {
+        $max_decimal_place = 2;
+    }
+    else {
+        $max_decimal_place = int( abs($max_decimal_place) );
+    }
 
     my $absnum = abs($bytes);
 
@@ -816,38 +921,38 @@ sub format_bytes {
     if ( $absnum < 1024 ) {
 
         # This is a special, internal-to-format_bytes, phrase: developers will not have to deal with this phrase directly.
-        return $lh->maketext( '[quant,_1,%s byte,%s bytes]', $bytes );    # the space between the '%s' and the 'b' is a non-break space (e.g. option-spacebar, not spacebar)
-                                                                            # We do not use $space or \xC2\xA0 since:
-                                                                            #   * parsers would need to know how to interpolate them in order to work with the phrase in the context of the system
-                                                                            #   * the non-breaking space character behaves as you'd expect it's various representations to.
-                                                                            # Should a second instance of this sort of thing happen we can revisit the idea of adding [comment] in the phrase itself or perhaps supporting an embedded call to [output,nbsp].
+        return $lh->maketext( '[quant,_1,%s byte,%s bytes]', [ $bytes, $max_decimal_place ] );    # the space between the '%s' and the 'b' is a non-break space (e.g. option-spacebar, not spacebar)
+                                                                                                    # We do not use $space or \xC2\xA0 since:
+                                                                                                    #   * parsers would need to know how to interpolate them in order to work with the phrase in the context of the system
+                                                                                                    #   * the non-breaking space character behaves as you'd expect it's various representations to.
+                                                                                                    # Should a second instance of this sort of thing happen we can revisit the idea of adding [comment] in the phrase itself or perhaps supporting an embedded call to [output,nbsp].
     }
     elsif ( $absnum < 1048576 ) {
-        return $lh->numf( ( $bytes / 1024 ), 2 ) . $space . 'KB';
+        return $lh->numf( ( $bytes / 1024 ), $max_decimal_place ) . $space . 'KB';
     }
     elsif ( $absnum < 1073741824 ) {
-        return $lh->numf( ( $bytes / 1048576 ), 2 ) . $space . 'MB';
+        return $lh->numf( ( $bytes / 1048576 ), $max_decimal_place ) . $space . 'MB';
     }
     elsif ( $absnum < 1099511627776 ) {
-        return $lh->numf( ( $bytes / 1073741824 ), 2 ) . $space . 'GB';
+        return $lh->numf( ( $bytes / 1073741824 ), $max_decimal_place ) . $space . 'GB';
     }
     elsif ( $absnum < 1125899906842624 ) {
-        return $lh->numf( ( $bytes / 1099511627776 ), 2 ) . $space . 'TB';
+        return $lh->numf( ( $bytes / 1099511627776 ), $max_decimal_place ) . $space . 'TB';
     }
     elsif ( $absnum < ( 1125899906842624 * 1024 ) ) {
-        return $lh->numf( ( $bytes / 1125899906842624 ), 2 ) . $space . 'PB';
+        return $lh->numf( ( $bytes / 1125899906842624 ), $max_decimal_place ) . $space . 'PB';
     }
     elsif ( $absnum < ( 1125899906842624 * 1024 * 1024 ) ) {
-        return $lh->numf( ( $bytes / ( 1125899906842624 * 1024 ) ), 2 ) . $space . 'EB';
+        return $lh->numf( ( $bytes / ( 1125899906842624 * 1024 ) ), $max_decimal_place ) . $space . 'EB';
     }
     elsif ( $absnum < ( 1125899906842624 * 1024 * 1024 * 1024 ) ) {
-        return $lh->numf( ( $bytes / ( 1125899906842624 * 1024 * 1024 ) ), 2 ) . $space . 'ZB';
+        return $lh->numf( ( $bytes / ( 1125899906842624 * 1024 * 1024 ) ), $max_decimal_place ) . $space . 'ZB';
     }
     else {
 
         # any reason to do the commented out code? if so please rt w/ details!
         # elsif ( $absnum < ( 1125899906842624 * 1024 * 1024 * 1024 * 1024 ) ) {
-        return $lh->numf( ( $bytes / ( 1125899906842624 * 1024 * 1024 * 1024 ) ), 2 ) . $space . 'YB';
+        return $lh->numf( ( $bytes / ( 1125899906842624 * 1024 * 1024 * 1024 ) ), $max_decimal_place ) . $space . 'YB';
 
         # }
         # else {
@@ -908,8 +1013,11 @@ sub __caller_args {
 sub output {
     my ( $lh, $output_function, $string, @output_function_args ) = @_;
 
-    $string =~ s/(su[bp])\(((?:\\\)|[^\)])+?)\)/my $s=$2;my $m="output_$1";$s=~s{\\\)}{\)}g;$lh->$m($s)/eg;
-    $string =~ s/chr\(((?:\d+|[\S]))\)/$lh->output_chr($1)/eg;
+    if ( defined $string && $string ne '' && $string =~ tr/(// ) {
+        $string =~ s/(su[bp])\(((?:\\\)|[^\)])+?)\)/my $s=$2;my $m="output_$1";$s=~s{\\\)}{\)}g;$lh->$m($s)/eg;
+        $string =~ s/chr\(((?:\d+|[\S]))\)/$lh->output_chr($1)/eg;
+        $string =~ s/numf\((\d+(?:\.\d+)?)\)/$lh->numf($1)/eg;
+    }
 
     if ( my $cr = $lh->can( 'output_' . $output_function ) ) {
         return $cr->( $lh, $string, @output_function_args );
@@ -1019,9 +1127,10 @@ sub output_chr {
             $chr_num == 34 || $chr_num == 147 || $chr_num == 148 ? '&quot;'
           : $chr_num == 38 ? '&amp;'
           : $chr_num == 39 || $chr_num == 145 || $chr_num == 146 ? '&#39;'
-          : $chr_num == 60 ? '&lt;'
-          : $chr_num == 62 ? '&gt;'
-          :                  $chr;
+          : $chr_num == 60  ? '&lt;'
+          : $chr_num == 62  ? '&gt;'
+          : $chr_num == 173 ? '&shy;'
+          :                   $chr;
     }
 }
 
@@ -1041,63 +1150,127 @@ sub output_asis_for_tests {
     return $string;
 }
 
-sub output_attr {
-    my ( $lh, $string, %attr ) = @_;
+sub __make_attr_str_from_ar {
+    my ( $attr_ar, $strip_hr ) = @_;
+    if ( ref($attr_ar) eq 'HASH' ) {
+        $strip_hr = $attr_ar;
+        $attr_ar  = [];
+    }
+
+    my $attr = '';
+    my $general_hr = ref( $attr_ar->[-1] ) eq 'HASH' ? pop( @{$attr_ar} ) : undef;
+
+    my $idx    = 0;
+    my $ar_len = @{$attr_ar};
+    while ( $idx < $ar_len ) {
+        if ( exists $strip_hr->{ $attr_ar->[$idx] } ) {
+            $idx += 2;
+            next;
+        }
+        $attr .= qq{ $attr_ar->[$idx]="$attr_ar->[++$idx]"};
+        $idx++;
+    }
+
+    if ($general_hr) {
+        for my $k ( keys %{$general_hr} ) {
+            next if exists $strip_hr->{$k};
+            $attr .= qq{ $k="$general_hr->{$k}"};
+        }
+    }
+
+    return $attr;
+}
+
+sub output_fragment {
+    my ( $lh, $string, @attrs ) = @_;
     $string = __proc_string_with_embedded_under_vars( $string, 1 );
     return $string if !$lh->context_is_html();
 
-    my $attr = '';
-    for my $name ( keys %attr ) {
-        $attr .= qq{ $name="$attr{$name}"};
-    }
-
+    my $attr = __make_attr_str_from_ar( \@attrs );
     return qq{<span$attr>$string</span>};
 }
 
+*output_attr = \&output_fragment;
+
+sub output_segment {
+    my ( $lh, $string, @attrs ) = @_;
+    $string = __proc_string_with_embedded_under_vars( $string, 1 );
+    return $string if !$lh->context_is_html();
+
+    my $attr = __make_attr_str_from_ar( \@attrs );
+    return qq{<div$attr>$string</div>};
+}
+
+sub output_img {
+    my ( $lh, $src, $alt, @attrs ) = @_;
+
+    if ( !defined $alt || $alt eq '' ) {
+        $alt = $src;
+    }
+    else {
+        $alt = __proc_string_with_embedded_under_vars( $alt, 1 );
+    }
+
+    return $alt if !$lh->context_is_html();
+
+    my $attr = __make_attr_str_from_ar( \@attrs, { 'alt' => 1, 'src' => 1 } );
+    return qq{<img src="$src" alt="$alt"$attr/>};
+}
+
 sub output_abbr {
-    my ( $lh, $abbr, $full ) = @_;
-    return !$lh->context_is_html() ? "$abbr ($full)" : qq{<abbr title="$full">$abbr</abbr>};
+    my ( $lh, $abbr, $full, @attrs ) = @_;
+    return !$lh->context_is_html()
+      ? "$abbr ($full)"
+      : qq{<abbr title="$full"} . __make_attr_str_from_ar( \@attrs, { 'title' => 1 } ) . qq{>$abbr</abbr>};
 }
 
 sub output_acronym {
-    my ( $lh, $acronym, $full ) = @_;
-    return !$lh->context_is_html() ? "$acronym ($full)" : qq{<acronym title="$full">$acronym</acronym>};
+    my ( $lh, $acronym, $full, @attrs ) = @_;
+    return !$lh->context_is_html()
+      ? "$acronym ($full)"
+      : qq{<acronym title="$full"} . __make_attr_str_from_ar( \@attrs, { 'title' => 1 } ) . qq{>$acronym</acronym>};
 }
 
 sub output_sup {
-    my ( $lh, $string ) = @_;
+    my ( $lh, $string, @attrs ) = @_;
     $string = __proc_string_with_embedded_under_vars( $string, 1 );
-    return !$lh->context_is_html() ? $string : qq{<sup>$string</sup>};
+    return !$lh->context_is_html() ? $string : qq{<sup} . __make_attr_str_from_ar( \@attrs ) . qq{>$string</sup>};
 }
 
 sub output_sub {
-    my ( $lh, $string ) = @_;
+    my ( $lh, $string, @attrs ) = @_;
     $string = __proc_string_with_embedded_under_vars( $string, 1 );
-    return !$lh->context_is_html() ? $string : qq{<sub>$string</sub>};
+    return !$lh->context_is_html() ? $string : qq{<sub} . __make_attr_str_from_ar( \@attrs ) . qq{>$string</sub>};
 }
 
 sub output_underline {
-    my ( $lh, $string ) = @_;
+    my ( $lh, $string, @attrs ) = @_;
+
     $string = __proc_string_with_embedded_under_vars( $string, 1 );
     return $string if $lh->context_is_plain();
-    return $lh->context_is_ansi() ? "\e[4m$string\e[0m" : qq{<span style="text-decoration: underline">$string</span>};
+    return $lh->context_is_ansi() ? "\e[4m$string\e[0m" : qq{<span style="text-decoration: underline"} . __make_attr_str_from_ar( \@attrs ) . qq{>$string</span>};
 }
 
 sub output_strong {
-    my ( $lh, $string ) = @_;
+    my ( $lh, $string, @attrs ) = @_;
+
     $string = __proc_string_with_embedded_under_vars( $string, 1 );
     return $string if $lh->context_is_plain();
-    return $lh->context_is_ansi() ? "\e[1m$string\e[0m" : "<strong>$string</strong>";
+    return $lh->context_is_ansi() ? "\e[1m$string\e[0m" : '<strong' . __make_attr_str_from_ar( \@attrs ) . ">$string</strong>";
 }
 
 sub output_em {
-    my ( $lh, $string ) = @_;
+    my ( $lh, $string, @attrs ) = @_;
+
     $string = __proc_string_with_embedded_under_vars( $string, 1 );
     return $string if $lh->context_is_plain();
 
     # italic code 3 is specified in ANSI X3.64 and ECMA-048 but are not commonly supported by most displays and emulators, but we can try!
-    return $lh->context_is_ansi() ? "\e[3m$string\e[0m" : "<em>$string</em>";
+    return $lh->context_is_ansi() ? "\e[3m$string\e[0m" : '<em' . __make_attr_str_from_ar( \@attrs ) . ">$string</em>";
 }
+
+# output,del output,strike (ick):
+#     strike-though code 9 is specified in ANSI X3.64 and ECMA-048 but are not commonly supported by most displays and emulators, but we can try!
 
 sub output_url {
     my ( $lh, $url, @args ) = @_;
@@ -1111,6 +1284,7 @@ sub output_url {
         }
 
         if ( exists $output_config{'plain'} ) {
+            $output_config{'plain'} = __proc_string_with_embedded_under_vars( $output_config{'plain'}, 1 );
             if ( my @count = $output_config{'plain'} =~ m{(\%s)\b}g ) {
                 my $count = @count;
                 my @sprintf_args;
@@ -1125,7 +1299,12 @@ sub output_url {
         }
     }
     else {
+        if ( exists $output_config{'html'} ) {
+            $output_config{'html'} = __proc_string_with_embedded_under_vars( $output_config{'html'}, 1 );
+        }
+
         $output_config{'html'} ||= $br_mod || $url;
+
         my $attr = '';
         for my $name ( keys %output_config ) {
             next if $name eq 'html' || $name eq 'plain' || $name eq '_type';
