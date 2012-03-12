@@ -4,8 +4,8 @@ WriteMakefile(
     NAME              => 'Locale::Maketext::Utils',
     VERSION_FROM      => 'lib/Locale/Maketext/Utils.pm', 
     PREREQ_PM         => {
-        'Locale::Maketext'  => 1.21,
-        'Locales'           => 0.25,
+        'Locale::Maketext'  => 1.22,
+        'Locales'           => 0.26,
         'DateTime'          => 0,
         'Net::LibIDN'       => 0,
         'IO::Interactive::Tiny' => 0,

@@ -1,6 +1,13 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
-0.21  Fri Mar 2 11:31:57 2012
+0.22  Sun Mar 11 23:07:00 2012
+    - rt 75651 Add “=encoding utf-8” to POD of Locale::Maketext::Utils::Phrase::Norm
+    - document quant() max decimal place
+    - add _* support to embedded arg check in _compile()
+    - updated required Locale::Maketext and Locales.pm version to the latest
+    - Added t/07.phrase_norm.t from 0.21 to the manifest and thus the tarball
+
+0.21  Fri Mar  2 11:31:57 2012
     - only do embedded methods when the string is defined and has a ( in it
     - added output_segment, output_fragment, and output_img
     - Added get_asset(), get_asset_file(), and get_asset_dir()

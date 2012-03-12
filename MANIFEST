@@ -9,6 +9,7 @@ t/03.default_output_functions.t
 t/04.use_external_lex_cache.t
 t/05.assets.t
 t/06.cache.t
+t/07.phrase_norm.t
 t/lib/MyTestLocale.pm
 t/lib/MyTestLocale/es.pm
 t/lib/MyTestLocale/fr.pm

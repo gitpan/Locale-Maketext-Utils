@@ -215,6 +215,8 @@ sub filter_modifies_string {
 
 __END__
 
+=encoding utf-8
+
 =head1 NAME
 
 Locale::Maketext::Utils::Phrase::Norm - Normalize and perform lint-like analysis of phrases

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Locale-Maketext-Utils
-version:            0.21
+version:            0.22
 abstract:           Adds some utility functionality and failure handling to Local::Maketext handles
 author:
     - Daniel Muey, L<http://drmuey.com/cpan_contact.pl>
@@ -14,8 +14,8 @@ requires:
     DateTime:             0
     Encode:               0
     IO::Interactive::Tiny:  0
-    Locale::Maketext:     1.21
-    Locales:              0.25
+    Locale::Maketext:     1.22
+    Locales:              0.26
     Module::Want:         0
     Net::LibIDN:          0
 no_index:

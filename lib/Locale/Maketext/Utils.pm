@@ -3,10 +3,10 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.21';
+$Locale::Maketext::Utils::VERSION = '0.22';
 
 use Locale::Maketext 1.21 ();
-use Locales 0.25          ();
+use Locales 0.26          ();
 use Locales::DB::CharacterOrientation::Tiny ();
 use Locales::DB::LocaleDisplayPattern::Tiny ();
 
@@ -24,9 +24,9 @@ sub _compile {
         my ( $lh, @ref_args ) = @_;
 
         # Change embedded-arg-looking-string to a not-likley-to-exist-but-if-it-does-then-you-have-bigger-problems placeholder (i.e. '_1 -!-1-!-' would act wonky, so don't do that)
-        @ref_args = map { s/\_(\-?[0-9]+)/-!-$1-!-/g if defined; $_ } @ref_args;
-        my $built = $compiled->( $lh, @ref_args );    # if an method that supported embedded args ever looked for /\_(\-?[0-9]+)/ and acted upon it then it'd need to be aware of this convention and operate on /-!-(\-?[0-9]+)-!-/ instead (or better yet don't have it look for an act upon things that look like bracket notation arguments)
-        $built =~ s/-!-(\-?[0-9]+)-!-/_$1/g;          # Change placeholders back to their original
+        @ref_args = map { s/\_(\-?[0-9]+|\*)/-!-$1-!-/g if defined; $_ } @ref_args;
+        my $built = $compiled->( $lh, @ref_args );    # if an method that supported embedded args ever looked for /\_(\-?[0-9]+|\*)/ and acted upon it then it'd need to be aware of this convention and operate on /-!-(\-?[0-9]+|\*)-!-/ instead (or better yet don't have it look for an act upon things that look like bracket notation arguments)
+        $built =~ s/-!-(\-?[0-9]+|\*)-!-/_$1/g;       # Change placeholders back to their original
 
         return $built;
     };

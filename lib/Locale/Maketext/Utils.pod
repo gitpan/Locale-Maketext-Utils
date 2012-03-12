@@ -347,6 +347,11 @@ You can use '%s' to specify the position of the number. Other wise it is prepend
 
 The number is formatted via numf() with a max decimal place of 3.
 
+You can pass in an array ref instead of the number in order to pass in a max decimal places value. The first item is the number, the second item is the max decimal places.
+
+    maketext('The average monthly rainfall is [quant,_1,inch,inches].', $n); # … is 42.869 inches.
+    maketext('The average monthly rainfall is [quant,_1,inch,inches].', [$n,2]); # … is 42.87 inches.
+
 =head1 Additional bracket notation methods
 
 =head2 join()
