@@ -1,4 +1,4 @@
-use Test::More tests => 369;
+use Test::More tests => 373;
 
 BEGIN {
     use_ok('Locale::Maketext::Utils::Phrase::Norm');
@@ -175,7 +175,7 @@ run_32_tests(
         'all_violations' => {
             'special' => [
                 'multiple period/comma instead of ellipsis character',
-                'initial ellipisis needs tobe preceded by a normal space',
+                'initial ellipisis needs to be preceded by a normal space',
                 'invalid initial, medial, or final ellipsis',
             ],
             'default' => undef,                                                         # undef means "same as special"
@@ -184,7 +184,7 @@ run_32_tests(
         'filter_violations' => {
             'special' => [
                 'multiple period/comma instead of ellipsis character',
-                'initial ellipisis needs tobe preceded by a normal space',
+                'initial ellipisis needs to be preceded by a normal space',
                 'invalid initial, medial, or final ellipsis',
             ],
             'default' => undef,                                                         # undef means "same as special"
@@ -335,7 +335,7 @@ run_32_tests(
     'diag'                   => 0,
 );
 
-# TODO Complex bar vars (see filter mod for comment specifics)
+# TODO Complex bare vars (see filter mod for comment specifics)
 #    [output,strong,_2] [output,strong,_-42] [output,strong,_*] [output,strong,_2,Z] [output,strong,_-42,Z] [output,strong,_*,Z] [output,strong,X_2X] [output,strong,X_-42X] [output,strong,X_*X] [output,strong,X_2X,Z] [output,strong,X_-42X,Z] [output,strong,X_*X,Z]
 
 # No violations or warnings
@@ -346,6 +346,13 @@ is( $valid->get_warning_count(),   0, "valid: RES get_warning_count()" );
 is( $valid->get_violation_count(), 0, "valid: RES get_violation_count()" );
 
 # diag explain $valid;
+
+# No violations or warnings
+$valid = $norm->normalize('Hello World …');
+ok( $valid->get_status(),             "valid end …: RES get_status()" );
+ok( !$valid->filters_modify_string(), "valid end …: RES filters_modify_string()" );
+is( $valid->get_warning_count(),   0, "valid end …: RES get_warning_count()" );
+is( $valid->get_violation_count(), 0, "valid end …: RES get_violation_count()" );
 
 #### functions ##
 
@@ -447,5 +454,5 @@ sub run_32_tests {
         );
     }
 
-    $norm->clear_cache();
+    $norm->delete_cache();
 }

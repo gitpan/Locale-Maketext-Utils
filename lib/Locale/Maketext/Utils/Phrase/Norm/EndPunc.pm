@@ -8,7 +8,7 @@ sub normalize_maketext_string {
 
     my $string_sr = $filter->get_string_sr();
 
-    if ( ${$string_sr} !~ m/[\!\?\.\:\]…]$/ ) {
+    if ( ${$string_sr} !~ m/[\!\?\.\:\]…]$/ ) {    # ? TODO ? smarter check that is is actual bracket notation and not just a string ?
         if ( !__is_title_case( ${$string_sr} ) ) {
 
             # ${$string_sr} = ${$string_sr} . "[comment,missing puncutation ?]";
@@ -48,7 +48,11 @@ __END__
 
 =head1 Normalization
 
+We want to make sure phrases end correctly and consistently.
+
 =head2 Rationale
+
+Why would we want incorrect or inconsistent things?
 
 =head1 IF YOU USE THIS FILTER ALSO USE …
 
@@ -58,14 +62,14 @@ This is not enforced anywhere since we want to assume the coder knows what they 
 
 =head1 possible violations
 
-=over 4
-
-=item Text of violation here
-
-Description here
-
-=back 
+None
 
 =head1 possible warnings
 
-None
+=over 4
+
+=item Non title/label does not end with some sort of puncuation or bracket notation.
+
+Problem should be self explanatory. Ending puncuation is !, ?, ., :, bracket notation, or an ellipsis character,
+
+=back

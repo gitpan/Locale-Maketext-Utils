@@ -57,13 +57,13 @@ skip: {
     is( $lh->get_asset_file($file_name), $fr_file, 'get_asset_file()' );
     unlink($fr_file) || die "Could not remove “$fr_file”: $!";
     is( $lh->get_asset_file($file_name), $fr_file, 'get_asset_file() cached' );
-    $lh->flush_cache('get_asset_file');
-    is( $lh->get_asset_file($file_name), undef(), 'get_asset_file() cache flushed' );
+    $lh->delete_cache('get_asset_file');
+    is( $lh->get_asset_file($file_name), undef(), 'get_asset_file() cache deleted' );
 
     my $dir_name = File::Spec->catfile( $dir, '%s.d' );
     is( $lh->get_asset_dir($dir_name), $fr_dir, 'get_asset_dir()' );
     rmdir($fr_dir) || die "Could not remove “$fr_dir”: $!";
     is( $lh->get_asset_dir($dir_name), $fr_dir, 'get_asset_dir() cached' );
-    $lh->flush_cache('get_asset_dir');
-    is( $lh->get_asset_dir($dir_name), undef(), 'get_asset_dir() cache flushed' );
+    $lh->delete_cache('get_asset_dir');
+    is( $lh->get_asset_dir($dir_name), undef(), 'get_asset_dir() cache deleted' );
 }

@@ -20,20 +20,20 @@ my $lh = MyTestLocale->get_handle('pt_br');
 is( $lh->foo('x'), 'i am x',         'initial call returns correct value' );
 is( $lh->foo('x'), 'cached: i am x', 'subsequent callreturns cached value' );
 
-ok( exists $lh->{'cache'}{'foo'}, 'pre-flush-key has cache key' );
+ok( exists $lh->{'cache'}{'foo'}, 'pre-delete-key has cache key' );
 is_deeply(
-    $lh->flush_cache('foo'),
+    $lh->delete_cache('foo'),
     { x => 'i am x' },
-    'flush_cache(key) returns deleted data'
+    'delete_cache(key) returns deleted data'
 );
-ok( !exists $lh->{'cache'}{'foo'}, 'pst-flush-key cache key gone' );
-ok( exists $lh->{'cache'},         'pst-flush-key cache still there' );
+ok( !exists $lh->{'cache'}{'foo'}, 'pst-delete-key cache key gone' );
+ok( exists $lh->{'cache'},         'pst-delete-key cache still there' );
 
 $lh->foo('x');
-ok( exists $lh->{'cache'}{'foo'}, 'pre-flush has cache key' );
+ok( exists $lh->{'cache'}{'foo'}, 'pre-delete has cache key' );
 is_deeply(
-    $lh->flush_cache(),
+    $lh->delete_cache(),
     { foo => { x => 'i am x' } },
-    'flush_cache() returns deleted cache data'
+    'delete_cache() returns deleted cache data'
 );
-ok( !exists $lh->{'cache'}, 'pst-flush cache key gone' );
+ok( !exists $lh->{'cache'}, 'pst-delete cache key gone' );

@@ -13,7 +13,7 @@ sub normalize_maketext_string {
     }
 
     if ( ${$string_sr} =~ s/^(|\xc2\xa0|\[output\,nbsp\])…/ …/ ) {
-        $filter->add_violation('initial ellipisis needs tobe preceded by a normal space');
+        $filter->add_violation('initial ellipisis needs to be preceded by a normal space');
     }
 
     # 1. placeholders for legit ones
@@ -89,13 +89,13 @@ Some are exact opposites and yet still valid either way.
 
 So lets keep it simple.
 
-=item * We are unlikley to be omitting things from a quote:
+=item * We are unlikely to be omitting things from a quote:
 
    The server said, “PHP […] is like training wheels without the bike.”.
 
 Can be added later if necessary.
 
-=item *We are unlikley to be implying a continuing thought:
+=item *We are unlikely to be implying a continuing thought:
 
    What can you do, you know how he is ….
 

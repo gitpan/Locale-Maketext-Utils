@@ -69,7 +69,7 @@ The only single white space characters allowed are normal space and non-break-sp
 
 A tiny change in white-space[-ish] characters will make a phrase lookup fail errouneously. 
 
-The only other pupose of allowing characters like this would be formatting which should not be part of a phrase.
+The only other purpose of allowing characters like this would be formatting which should not be part of a phrase.
 
 That being the case we simplify consistently by using single space and non-break-space charcaters inside the string 
 (and the beginning if it starts with an L<ellipsis|Locale::Maketext::Utils::Phrase::Norm::Ellipsis>).

@@ -49,8 +49,8 @@ sub new {
     return bless { 'filters' => \@filters, 'cache' => {}, 'filter_namespace' => \%cr2ns }, $ns;
 }
 
-sub clear_cache {
-    %{ $_[0]->{'cache'} } = ();
+sub delete_cache {
+    delete $_[0]->{'cache'};
 }
 
 sub normalize {
@@ -237,7 +237,7 @@ This document describes Locale::Maketext::Utils::Phrase::Norm version 0.1
 
 =head1 DESCRIPTION
 
-Analysis, report, and normalize a maketext style phrase based on rules organized into filter modules.
+Analyze, report, and normalize a maketext style phrase based on rules organized into filter modules.
 
 =head1 INTERFACE
 
@@ -275,11 +275,11 @@ carp()s and returns false if there is some sort of failure (documented in L</"DI
 
 Takes a phrase as the only argument and returns a result object (documented in L</"Result Object">).
 
-=head3 clear_cache()
+=head3 delete_cache()
 
 The result of normalize() is cached internally so calling it subsequent times with the same string won’t result in it being reprocessed.
 
-This methods clears that cache.
+This method deletes the internal cache. Returns the hashref that was removed.
 
 =head2 Result Object
 
@@ -293,7 +293,7 @@ Returns the status of all the filters:
 
 =item -1 (i.e. still true) means there were warnings but no violations.
 
-=item False means there was at least one violation and possibly wanrings.
+=item False means there was at least one violation and possibly warnings.
 
 =back 
 
@@ -347,7 +347,7 @@ It is what the filter’s normalize_maketext_string() should return;
 
 =head3 Intended for use when processing results.
 
-Can of course be used in a filter module. See L</"ANATOMY OF A FILTER MODULE"> for more info.
+These can be used in a filter module’s filter code if you find use for them there. See L</"ANATOMY OF A FILTER MODULE"> for more info.
 
 =head4 get_status()
 
@@ -359,7 +359,7 @@ Returns the status of the filter:
 
 =item -1 (i.e. still true) means there were warnings but no violations.
 
-=item False means there was at least one violation and possibly wanrings.
+=item False means there was at least one violation and possibly warnings.
 
 =back
 
@@ -433,7 +433,7 @@ A filter module is simply a package that defines a function that does the filter
 
 This gets a single argument the L</"Filter Result Object"> that defines data about the phrase. 
 
-That abject can be used to do the actual checks, modifications if any, and return the expected info back (via $filter->return_value). 
+That object can be used to do the actual checks, modifications if any, and return the expected info back (via $filter->return_value). 
 
     package My::Phrase::Filter::X;
     

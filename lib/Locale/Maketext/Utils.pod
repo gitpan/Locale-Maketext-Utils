@@ -254,7 +254,11 @@ The code ref is passed a locale tag (from the list of the locale's fallbacks).
 
 The first tag that returns a defined value halts the loop and that value is returned.
 
-    my $
+    my $foo = $lh->get_asset(sub {
+        my ($tag) = @_;
+        return "foo+$tag" if Foo->has_locale($tag);
+        return;
+    });
 
 =head2 $lh->get_asset_file()
 
@@ -270,15 +274,15 @@ The optional second argument is a string to return when the path passes -f.
 
 Same as get_asset_file() but the path must pass -d.
 
-=head2 $lh->flush_cache()
+=head2 $lh->delete_cache()
 
 Delete the internal cache. Returns the hashref that was removed.
 
 You can pass it a key and only that is removed (i.e. instead of the entire cache).
 
-    my $get_asset_file_cache = $lh->flush_cache('get_asset_file');  # only delete the cached data for get_asset_file()
+    my $get_asset_file_cache = $lh->delete_cache('get_asset_file');  # only delete the cached data for get_asset_file()
     
-    my $entire_cache = $lh->flush_cache();# delete the entire cache
+    my $entire_cache = $lh->delete_cache();# delete the entire cache
     
 Currently this applies to 'get_asset_file', 'get_asset_dir', 'makethis', and 'makethis_base'.
 
@@ -706,9 +710,9 @@ Allows embedded arguments in the string.
 
 =item * attr()
 
-Alias for fragment()
+Alias for inline()
 
-=item * fragment()
+=item * inline()
 
 Allows assigning attributes to part of a string.
 
@@ -718,17 +722,13 @@ Allows embedded arguments in the string.
 
 In HTML context it is a span tag.
 
-This was not called 'span' or 'inline' to avoid tieing it to terms of the underlying systems that one context uses.
+=item * block()
 
-=item * segment()
-
-Same as fragment() except, in HTML context, it uses a div instead of span. (Think of "fragment" as small and arbitrary but "segment" as a more defined block.)
+Same as inline() except, in HTML context, it uses a div instead of span.
 
 The div should conceptually be an inline-div for positioning part of a string and not for document stucture. (Bracket notation is not a template system!)
 
-When we get real world examples of this I'll update the POD. For now you probably really want output,fragment or output,sub or output,sup.
-
-This was not called 'div', 'block', or 'inline_block' to avoid tieing it to terms of the underlying systems that one context uses.
+When we get real world examples of this I'll update the POD. For now you probably really want output,inline or output,sub or output,sup.
 
 =item * img()
 
@@ -821,9 +821,9 @@ Methods that support this feature are able to accept additional arguments treate
 
 The idea is to embed ones that will likely not change and hopefully add to the meaning of the string.
 
-    Your hair [output,fragment,is on fire,class,urgent]!
+    Your hair [output,inline,is on fire,class,urgent]!
     
-After that list (or instead of it) a single hashref can be passed in. The intent here is to be able to do any arbitrary name/value that the caller might want to use but is likely to change and/or ads little meaning if any to the string.
+After that list (or instead of it) a single hashref can be passed in. The intent here is to be able to do any arbitrary name/value that the caller might want to use but is likely to change and/or adds little meaning if any to the string.
 
 =head2 output() context
 

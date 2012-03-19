@@ -10,9 +10,11 @@ sub normalize_maketext_string {
 
     if ( ${$string_sr} !~ m/\A(?:[A-Z]|(?:\[[^\]]+)|(?: …))/ ) {
 
-        # ${$string_sr} = "[comment,beggining needs to be upper case ?]" . ${$string_sr};
+        # ${$string_sr} = "[comment,beginning needs to be upper case ?]" . ${$string_sr};
         $filter->add_violation('Does not start with an uppercase letter, ellipsis preceded by space, or bracket notation.');
     }
+
+    # TODO (phrase obj?) If it starts w/ bracket notation will it be appropriately begun when rendered?
 
     return $filter->return_value;
 }
@@ -25,18 +27,22 @@ __END__
 
 =head1 Normalization
 
+We want to make sure phrases begin correctly and consistently.
+
 =head2 Rationale
+
+Why would we want incorrect or inconsistent things?
 
 =head1 possible violations
 
-None
-
-=head1 possible warnings
-
-over 4
+=over 4
 
 =item Does not start with an uppercase letter, ellipsis preceded by space, or bracket notation.
 
-TODO DESC
+Problem should be self explanatory.
 
 =back
+
+=head1 possible warnings
+
+None

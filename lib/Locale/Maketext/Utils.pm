@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.22';
+$Locale::Maketext::Utils::VERSION = '0.23';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -302,7 +302,7 @@ sub text {
         return;
     }
 
-    # backup $@ in case it it's still being used in the calling code.
+    # backup $@ in case it is still being used in the calling code.
     # If no failures, we'll re-set it back to what it was later.
     my $at = $@;
 
@@ -330,7 +330,7 @@ sub text {
         # but they can "local $handle->{'_external_lex_cache'}{'_AUTO'} = 1;"
         elsif ( $phrase !~ m/^_/s and $h_r->{'_AUTO'} ) {
 
-            # it's an auto lex, and this is an autoable key!
+            # it is an auto lex, and this is an autoable key!
             # DEBUG and warn "  Automaking \"$phrase\" into $h_r\n";
             $value = $phrase;
             last;
@@ -391,7 +391,7 @@ sub lang_names_hashref {
     my $native    = wantarray && $Locales::VERSION > 0.06 ? {} : undef;
     my $direction = wantarray && $Locales::VERSION > 0.09 ? {} : undef;
 
-    for my $code ( 'en', @langcodes ) {    # en since its "built in"
+    for my $code ( 'en', @langcodes ) {    # en since it is "built in"
 
         $langname->{$code} = $lh->{'Locales.pm'}{'_main_'}->get_language_from_code( $code, 1 );
 
@@ -646,7 +646,7 @@ sub get_asset_dir {
     return;
 }
 
-sub flush_cache {
+sub delete_cache {
     my ( $lh, $which ) = @_;
     if ( defined $which ) {
         return delete $lh->{'cache'}{$which};
@@ -869,11 +869,11 @@ sub datetime {
 #   - add tests
 #   - incorporate this into phrase checker classes Locale::Maketext::Utils::Phrase::Norm::Ampersand and Locale::Maketext::Utils::Phrase::Norm::Markup
 #   - update best practice docs
-sub output_amp  { return $_[0]->output_chr(38) }
-sub output_lt   { return $_[0]->output_chr(60) }
-sub output_gt   { return $_[0]->output_chr(62) }
-sub output_apos { return $_[0]->output_chr(39) }
-sub output_quot { return $_[0]->output_chr(34) }
+# sub output_amp  { return $_[0]->output_chr(38) }
+# sub output_lt   { return $_[0]->output_chr(60) }
+# sub output_gt   { return $_[0]->output_chr(62) }
+# sub output_apos { return $_[0]->output_chr(39) }
+# sub output_quot { return $_[0]->output_chr(34) }
 
 sub output_nbsp {
 
@@ -924,7 +924,7 @@ sub format_bytes {
         return $lh->maketext( '[quant,_1,%s byte,%s bytes]', [ $bytes, $max_decimal_place ] );    # the space between the '%s' and the 'b' is a non-break space (e.g. option-spacebar, not spacebar)
                                                                                                     # We do not use $space or \xC2\xA0 since:
                                                                                                     #   * parsers would need to know how to interpolate them in order to work with the phrase in the context of the system
-                                                                                                    #   * the non-breaking space character behaves as you'd expect it's various representations to.
+                                                                                                    #   * the non-breaking space character behaves as you'd expect its various representations to.
                                                                                                     # Should a second instance of this sort of thing happen we can revisit the idea of adding [comment] in the phrase itself or perhaps supporting an embedded call to [output,nbsp].
     }
     elsif ( $absnum < 1048576 ) {
@@ -1181,7 +1181,7 @@ sub __make_attr_str_from_ar {
     return $attr;
 }
 
-sub output_fragment {
+sub output_inline {
     my ( $lh, $string, @attrs ) = @_;
     $string = __proc_string_with_embedded_under_vars( $string, 1 );
     return $string if !$lh->context_is_html();
@@ -1190,9 +1190,9 @@ sub output_fragment {
     return qq{<span$attr>$string</span>};
 }
 
-*output_attr = \&output_fragment;
+*output_attr = \&output_inline;
 
-sub output_segment {
+sub output_block {
     my ( $lh, $string, @attrs ) = @_;
     $string = __proc_string_with_embedded_under_vars( $string, 1 );
     return $string if !$lh->context_is_html();

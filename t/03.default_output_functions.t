@@ -85,20 +85,20 @@ is(
 
 # arbitrary attribute key/value args
 
-is( $lh->maketext('[output,fragment,Foo Bar]'),         '<span>Foo Bar</span>',           'output fragment() standard' );
-is( $lh->maketext('[output,fragment,Foo Bar,baz,wop]'), '<span baz="wop">Foo Bar</span>', 'ouput fragment() w/ arbitrary attributes' );
-is( $lh->maketext( '[output,fragment,Foo Bar,baz,wop,_1]', { a => 1 } ), '<span baz="wop" a="1">Foo Bar</span>', 'ouput fragment() w/ arbitrary attributes + hashref' );
-is( $lh->maketext( '[output,fragment,Foo Bar,_1]',         { a => 1 } ), '<span a="1">Foo Bar</span>',           'ouput fragment() w/ hashref' );
+is( $lh->maketext('[output,inline,Foo Bar]'),         '<span>Foo Bar</span>',           'output inline() standard' );
+is( $lh->maketext('[output,inline,Foo Bar,baz,wop]'), '<span baz="wop">Foo Bar</span>', 'ouput inline() w/ arbitrary attributes' );
+is( $lh->maketext( '[output,inline,Foo Bar,baz,wop,_1]', { a => 1 } ), '<span baz="wop" a="1">Foo Bar</span>', 'ouput inline() w/ arbitrary attributes + hashref' );
+is( $lh->maketext( '[output,inline,Foo Bar,_1]',         { a => 1 } ), '<span a="1">Foo Bar</span>',           'ouput inline() w/ hashref' );
 
 is( $lh->maketext('[output,attr,Foo Bar]'),         '<span>Foo Bar</span>',           'output attr() standard' );
 is( $lh->maketext('[output,attr,Foo Bar,baz,wop]'), '<span baz="wop">Foo Bar</span>', 'ouput attr() w/ arbitrary attributes' );
 is( $lh->maketext( '[output,attr,Foo Bar,baz,wop,_1]', { a => 1 } ), '<span baz="wop" a="1">Foo Bar</span>', 'ouput attr() w/ arbitrary attributes + hashref' );
 is( $lh->maketext( '[output,attr,Foo Bar,_1]',         { a => 1 } ), '<span a="1">Foo Bar</span>',           'ouput attr() w/ hashref' );
 
-is( $lh->maketext('[output,segment,Foo Bar]'),         '<div>Foo Bar</div>',           'output segment() standard' );
-is( $lh->maketext('[output,segment,Foo Bar,baz,wop]'), '<div baz="wop">Foo Bar</div>', 'ouput segment() w/ arbitrary attributes' );
-is( $lh->maketext( '[output,segment,Foo Bar,baz,wop,_1]', { a => 1 } ), '<div baz="wop" a="1">Foo Bar</div>', 'ouput segment() w/ arbitrary attributes + hashref' );
-is( $lh->maketext( '[output,segment,Foo Bar,_1]',         { a => 1 } ), '<div a="1">Foo Bar</div>',           'ouput fragment() w/ hashref' );
+is( $lh->maketext('[output,block,Foo Bar]'),         '<div>Foo Bar</div>',           'output block() standard' );
+is( $lh->maketext('[output,block,Foo Bar,baz,wop]'), '<div baz="wop">Foo Bar</div>', 'ouput block() w/ arbitrary attributes' );
+is( $lh->maketext( '[output,block,Foo Bar,baz,wop,_1]', { a => 1 } ), '<div baz="wop" a="1">Foo Bar</div>', 'ouput block() w/ arbitrary attributes + hashref' );
+is( $lh->maketext( '[output,block,Foo Bar,_1]',         { a => 1 } ), '<div a="1">Foo Bar</div>',           'ouput inline() w/ hashref' );
 
 is( $lh->maketext('[output,sup,Foo Bar]'),         '<sup>Foo Bar</sup>',           'output sup() standard' );
 is( $lh->maketext('[output,sup,Foo Bar,baz,wop]'), '<sup baz="wop">Foo Bar</sup>', 'ouput sup() w/ arbitrary attributes' );
@@ -134,10 +134,10 @@ is( $lh->maketext('[output,acronym,FB,Foo Bar,baz,wop,title,wrong]'), '<acronym 
 is( $lh->maketext( '[output,acronym,FB,Foo Bar,baz,wop,_1]', { a => 1, title => 'wrong' } ), '<acronym title="Foo Bar" baz="wop" a="1">FB</acronym>', 'ouput acronym() w/ arbitrary attributes + hashref - title ignored' );
 is( $lh->maketext( '[output,acronym,FB,Foo Bar,_1]', { a => 1 } ), '<acronym title="Foo Bar" a="1">FB</acronym>', 'ouput acronym() w/ hashref' );
 
-is( $lh->maketext('[output,underline,Foo Bar]'),         '<span style="text-decoration: underline">Foo Bar</span>',           'output fragment() standard' );
+is( $lh->maketext('[output,underline,Foo Bar]'),         '<span style="text-decoration: underline">Foo Bar</span>',           'output inline() standard' );
 is( $lh->maketext('[output,underline,Foo Bar,baz,wop]'), '<span style="text-decoration: underline" baz="wop">Foo Bar</span>', 'ouput underline() w/ arbitrary attributes' );
 is( $lh->maketext( '[output,underline,Foo Bar,baz,wop,_1]', { a => 1 } ), '<span style="text-decoration: underline" baz="wop" a="1">Foo Bar</span>', 'ouput underline() w/ arbitrary attributes + hashref' );
-is( $lh->maketext( '[output,fragment,Foo Bar,_1]', { a => 1 } ), '<span a="1">Foo Bar</span>', 'ouput fragment() w/ hashref' );
+is( $lh->maketext( '[output,inline,Foo Bar,_1]', { a => 1 } ), '<span a="1">Foo Bar</span>', 'ouput inline() w/ hashref' );
 
 is( $lh->maketext('[output,img,SRC]'),             '<img src="SRC" alt="SRC"/>',           'output img() - no alt' );
 is( $lh->maketext('[output,img,SRC,_1]'),          '<img src="SRC" alt="SRC"/>',           'output img() - ALT arg missing i.e. undef()' );
