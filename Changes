@@ -1,5 +1,8 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.25  Thu Mar 22 12:39:55 2012
+    - adjust output,url regex in 'Consider' filter to capture the first arg instead of all args for the example
+    
 0.24  Thu Mar 22 09:29:55 2012
     - rt 75979: Do not use /p so that it will work on perls older than 5.10
     - rt 75919: POD normalize_maketext_string() spiff ups

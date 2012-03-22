@@ -1,4 +1,4 @@
-use Test::More tests => 373;
+use Test::More tests => 405;
 
 BEGIN {
     use_ok('Locale::Maketext::Utils::Phrase::Norm');
@@ -289,6 +289,32 @@ run_32_tests(
     'filter_pos'     => 8,
     'original'       => 'X [output,url,_1] [output,url,http://search.cpan.org] Y.',
     'modified'       => 'X [output,url,_1] [output,url,why harcode “http://search.cpan.org”] Y.',
+    'all_violations' => {
+        'special' => [],
+        'default' => undef,    # undef means "same as special"
+    },
+    'all_warnings' => {
+        'default' => [
+            'Hard coded URLs can be a maintenance nightmare, why not pass the URL in so the phrase does not change if the URL does',
+        ],
+        'special' => undef,
+    },
+    'filter_violations' => undef,    # undef means "same as all_violations"
+    'filter_warnings'   => undef,    # undef means "same as all_warnings"
+    'return_value'      => {
+        'special' => [ -1, 0,                             1, 1 ],
+        'default' => undef, # undef means "same as special"
+    },
+    'get_status_is_warnings' => 1,
+    'diag'                   => 0,
+);
+
+# hardcoded URL w/ additional args
+run_32_tests(
+    'filter_name'    => 'Consider',
+    'filter_pos'     => 8,
+    'original'       => 'X [output,url,_1] [output,url,http://search.cpan.org,foo,bar] Y.',
+    'modified'       => 'X [output,url,_1] [output,url,why harcode “http://search.cpan.org”,foo,bar] Y.',
     'all_violations' => {
         'special' => [],
         'default' => undef,    # undef means "same as special"

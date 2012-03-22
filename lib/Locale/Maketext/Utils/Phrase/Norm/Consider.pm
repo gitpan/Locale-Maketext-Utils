@@ -60,10 +60,11 @@ sub normalize_maketext_string {
         }
 
         # Do not hardcode URL in [output,url]:
-        if ( $bn =~ m/^\[output,url,(.*)(,|)\]$/ ) {
-            my $url = $1;
+        if ( $bn =~ m/^\[output,url,([^\,]*)(,.*|)\]$/ ) {                                                              # will not match a URL w/ escaped comma (i.e. ~,) but then that'd be wrong anyway so we should be good
+            my $url  = $1;
+            my $args = $2;
             if ( $url !~ m/^($bn_var)$/ ) {
-                ${$string_sr} =~ s/(\Q$bn\E)/\[output,url,why harcode “$url”\]/;
+                ${$string_sr} =~ s/(\Q$bn\E)/\[output,url,why harcode “$url”$args\]/;
                 $has_hardurl++;
             }
         }
