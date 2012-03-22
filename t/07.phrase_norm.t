@@ -310,6 +310,7 @@ run_32_tests(
 );
 
 # Simple bare var
+# 32k more: for (1..1001) {
 run_32_tests(
     'filter_name'    => 'Consider',
     'filter_pos'     => 8,
@@ -334,6 +335,8 @@ run_32_tests(
     'get_status_is_warnings' => 1,
     'diag'                   => 0,
 );
+
+# /32k more }
 
 # TODO Complex bare vars (see filter mod for comment specifics)
 #    [output,strong,_2] [output,strong,_-42] [output,strong,_*] [output,strong,_2,Z] [output,strong,_-42,Z] [output,strong,_*,Z] [output,strong,X_2X] [output,strong,X_-42X] [output,strong,X_*X] [output,strong,X_2X,Z] [output,strong,X_-42X,Z] [output,strong,X_*X,Z]

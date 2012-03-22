@@ -24,9 +24,18 @@ sub normalize_maketext_string {
 
     my $idx = 0;
     my @bn;
-    while ( ${$string_sr} =~ m/\[.*?\]/pg ) {    # TODO: make this regex/logic smarter since it will not work with ~[ but why would we do that right :) - may need to wait for phrase-as-class obj
-        push @bn, [ ${^PREMATCH}, ${^MATCH}, ${^POSTMATCH}, $idx++ ];
+
+    while ( ${$string_sr} =~ m/\[.*?\]/g ) {    # TODO: make this regex/logic smarter since it will not work with ~[ but why would we do that right :) - may need to wait for phrase-as-class obj
+        push @bn, [ $`, $&, $', $idx++ ];
+
+        # rt 75979: /p breaks perl before 5.10 so we can not do the less expensive/invasive:
+        #    push @bn, [ ${^PREMATCH}, ${^MATCH}, ${^POSTMATCH}, $idx++ ];
+        # if ($] >= 5.010) won't help because:
+        #    1. the /p will still cause a syntax error
+        #    2. if we addressed #1 by eval()ing the /p then we'd still have the compiler expense since  $`, $&, $' are still in the code (which there is no way around AFAIK)
+        # ? TODO: create @bn without the need for the match variables ? patches welcome!
     }
+
     my $has_bare    = 0;
     my $has_hardurl = 0;
     for my $bn_ar (@bn) {
@@ -35,7 +44,7 @@ sub normalize_maketext_string {
         # bare variable:
         #   Simple: [_1]
         #   TODO: Complex: [output,strong,_1] (but not [numf,_1] or [output,url,_1…]), - may need to wait for phrase-as-class obj
-        if ( $bn =~ m/^\[($bn_var)\]$/ ) {       # TODO: && “Complex” capture here
+        if ( $bn =~ m/^\[($bn_var)\]$/ ) {    # TODO: && “Complex” capture here
 
             # unless the bare bracket notation  …
             unless (

@@ -431,7 +431,7 @@ A filter module is simply a package that defines a function that does the filter
 
 =head2 normalize_maketext_string()
 
-This gets a single argument the L</"Filter Result Object"> that defines data about the phrase. 
+This gets passed a single argument: the L</"Filter Result Object"> that defines data about the phrase. 
 
 That object can be used to do the actual checks, modifications if any, and return the expected info back (via $filter->return_value). 
 
@@ -442,7 +442,7 @@ That object can be used to do the actual checks, modifications if any, and retur
 
         my $string_sr = $filter->get_string_sr();
 
-        if (${$string_sr} =~ s/X/Y/g) {
+        if (${$string_sr} =~ s/X/[comment,unexpected X]/g) {
               $filter->add_warning('X might be invalid might wanna check that');
         #         or
         #      $filter->add_violation('Text of violation here');
@@ -453,7 +453,7 @@ That object can be used to do the actual checks, modifications if any, and retur
     
     1;
 
-It’s a good idea to explain the filter in it’s POD.
+It’s a good idea to explain the filter in it’s POD. Check out L<_Stub|Locale::Maketext::Utils::Phrase::Norm::_Stub> for some boilerplate.
 
 =head1 DIAGNOSTICS
 

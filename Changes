@@ -1,5 +1,9 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.24  Thu Mar 22 09:29:55 2012
+    - rt 75979: Do not use /p so that it will work on perls older than 5.10
+    - rt 75919: POD normalize_maketext_string() spiff ups
+
 0.23  Fri Mar 16 11:32:43 2012
     - fix clipped get_asset() POD example
     - fix various POD spelling/verbiage issues
