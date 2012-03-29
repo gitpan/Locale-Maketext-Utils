@@ -1,11 +1,11 @@
 use Test::More tests => 439;
 
 BEGIN {
-    use_ok('Locale::Maketext::Utils::Phrase::Norm');
+    use_ok('Locale::Maketext::Utils::Phrase::cPanel');
 }
 
-our $norm = Locale::Maketext::Utils::Phrase::Norm->new();
-my $spec = Locale::Maketext::Utils::Phrase::Norm->new( 'WhiteSpace', { 'skip_defaults_when_given_filters' => 1 } );
+our $norm = Locale::Maketext::Utils::Phrase::cPanel->new();
+my $spec = Locale::Maketext::Utils::Phrase::cPanel->new( 'WhiteSpace', { 'skip_defaults_when_given_filters' => 1 } );
 
 our %global_all_warnings = (
     'special' => [],
@@ -20,7 +20,7 @@ our %global_filter_warnings = (
 {
 
     # need to skip BeginUpper and EndPunc since it bumps 1 value in one test but not the others. Also Ellipsis so we don't have to factor in an extra change
-    local $norm = Locale::Maketext::Utils::Phrase::Norm->new( qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Escapes), { 'skip_defaults_when_given_filters' => 1 } );
+    local $norm = Locale::Maketext::Utils::Phrase::cPanel->new( qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Escapes), { 'skip_defaults_when_given_filters' => 1 } );
 
     run_32_tests(
         'filter_name'    => 'WhiteSpace',
@@ -149,7 +149,7 @@ run_32_tests(
     'diag' => 0,
 );
 {
-    my $ell = Locale::Maketext::Utils::Phrase::Norm->new( 'Ellipsis', { 'skip_defaults_when_given_filters' => 1 } );
+    my $ell = Locale::Maketext::Utils::Phrase::cPanel->new( 'Ellipsis', { 'skip_defaults_when_given_filters' => 1 } );
     for my $good (
         ' … I am … good, you …',                                                    # normal spaces
         ' … I am … good, you …',                                                # character (OSX: ⌥space)
@@ -165,7 +165,7 @@ run_32_tests(
 {
 
     # need to skip BeginUpper and Whitespace since it bumps 1 value in one test but not the others.
-    local $norm = Locale::Maketext::Utils::Phrase::Norm->new( qw(NonBytesStr Grapheme Ampersand Markup Ellipsis EndPunc Escapes), { 'skip_defaults_when_given_filters' => 1 } );
+    local $norm = Locale::Maketext::Utils::Phrase::cPanel->new( qw(NonBytesStr Grapheme Ampersand Markup Ellipsis EndPunc Escapes), { 'skip_defaults_when_given_filters' => 1 } );
 
     run_32_tests(
         'filter_name'    => 'Ellipsis',
@@ -395,7 +395,7 @@ run_32_tests(
     'get_status_is_warnings' => 0,
     'diag'                   => 0,
 );
-my $esc_filt = Locale::Maketext::Utils::Phrase::Norm->new( 'Escapes', { 'skip_defaults_when_given_filters' => 1 } );
+my $esc_filt = Locale::Maketext::Utils::Phrase::cPanel->new( 'Escapes', { 'skip_defaults_when_given_filters' => 1 } );
 my $esc_filt_res = $esc_filt->normalize('I am \x{263A}.');
 is( $esc_filt_res->get_aggregate_result(), 'I am \x{263A}.', 'Escapes–leaves \x alone.' );
 
@@ -424,7 +424,7 @@ sub run_32_tests {
     my %args = @_;
 
     diag("$args{'filter_name'} filter");
-    my $spec = Locale::Maketext::Utils::Phrase::Norm->new( $args{'filter_name'}, { 'skip_defaults_when_given_filters' => 1 } );
+    my $spec = Locale::Maketext::Utils::Phrase::cPanel->new( $args{'filter_name'}, { 'skip_defaults_when_given_filters' => 1 } );
 
     if ( !defined $args{'return_value'}{'special'} ) {
         $args{'return_value'}{'special'} = $args{'return_value'}{'default'};

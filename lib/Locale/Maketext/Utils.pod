@@ -1070,6 +1070,8 @@ Uses L<Tie::Hash::ReadonlyStack/del_lookup_hash()> under the hood.
 
 See L<Locale::Maketext::Utils::Phrase::Norm> for pragmatic examination and normalization of maketext phrase.
 
+See L<Locale::Maketext::Utils::Phrase::cPanel>for the same but via a cPanel recipe.
+
 =head1 ENVIRONMENT
 
 $ENV{'maketext_obj'} gets set to the language object on initialization ( for functions to use, see "FUNCTIONS" below ) unless $ENV{'maketext_obj_skip_env'} is true
@@ -1091,8 +1093,6 @@ L<Locale::Maketext>, L<Locales::Language>, L<Locale::Maketext::Pseudo>, L<Text::
 If you use L</$lh->lang_names_hashref()> or L</$lh->loadable_lang_names_hashref()> make sure you have the latest verison of L<Locales> as 0.04 (i.e. L<Locales::Base> 0.03) is buggy!
 
 =head1 TODO
-
-Document Locale::Maketext::Utils::Phrase::Norm, add more normalizing classes.
 
 Audit that “Arbitrary name/value attribute list” is being used everywhere it makes sense to and that each use of it is documented.
 

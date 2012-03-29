@@ -41,7 +41,7 @@ If you get false positives then that only goes to help highlight how ambiguity a
 
 =item Contains grapheme notation
 
-A sequence of “\xe2\x98\xba\xe2\x80\xa6” be replaced w/ [comment,grapheme “\xe2\x98\xba\xe2\x80\xa6”]
+A sequence of \xe2\x98\xba\xe2\x80\xa6 will be replaced w/ [comment,grapheme “\xe2\x98\xba\xe2\x80\xa6”]
 
 =back 
 

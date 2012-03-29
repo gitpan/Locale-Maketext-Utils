@@ -10,6 +10,7 @@ t/04.use_external_lex_cache.t
 t/05.assets.t
 t/06.cache.t
 t/07.phrase_norm.t
+t/08.cpanel_norm.t
 t/lib/MyTestLocale.pm
 t/lib/MyTestLocale/es.pm
 t/lib/MyTestLocale/fr.pm
@@ -19,6 +20,7 @@ t/lib/MyTestLocale/Utils/Misc.pm
 lib/Locale/Maketext/Utils.pm
 lib/Locale/Maketext/Utils.pod
 lib/Locale/Maketext/Utils/Phrase/Core.pm
+lib/Locale/Maketext/Utils/Phrase/cPanel.pm
 lib/Locale/Maketext/Utils/Phrase/Norm.pm
 lib/Locale/Maketext/Utils/Phrase/Norm/Ampersand.pm
 lib/Locale/Maketext/Utils/Phrase/Norm/Ellipsis.pm
@@ -30,5 +32,6 @@ lib/Locale/Maketext/Utils/Phrase/Norm/EndPunc.pm
 lib/Locale/Maketext/Utils/Phrase/Norm/Markup.pm
 lib/Locale/Maketext/Utils/Phrase/Norm/WhiteSpace.pm
 lib/Locale/Maketext/Utils/Phrase/Norm/Consider.pm
+lib/Locale/Maketext/Utils/Phrase/Norm/Escapes.pm
 
 META.yml                                 Module meta-data (added by MakeMaker)

@@ -3,11 +3,13 @@ package Locale::Maketext::Utils::Phrase::Norm;
 use strict;
 use warnings;
 
+$Locale::Maketext::Utils::Phrase::Norm::VERSION = '0.2';
+
 use Module::Want ();
 use Carp         ();
 
 # IF YOU CHANGE THIS CHANGE THE “DEFAULT FILTERS” POD SECTION ALSO
-my @default_filters = qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellipsis BeginUpper EndPunc Consider);    # IF YOU CHANGE THIS CHANGE THE “DEFAULT FILTERS” POD SECTION ALSO
+my @default_filters = qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellipsis BeginUpper EndPunc Consider Escapes);    # IF YOU CHANGE THIS CHANGE THE “DEFAULT FILTERS” POD SECTION ALSO
 
 # IF YOU CHANGE THIS CHANGE THE “DEFAULT FILTERS” POD SECTION ALSO
 
@@ -15,15 +17,15 @@ my @default_filters = qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellips
 
 sub new {
     my $ns = shift;
-    $ns = ref($ns) if ref($ns);                                                                                     # just the class ma'am
+    $ns = ref($ns) if ref($ns);                                                                                             # just the class ma'am
 
     my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
 
     my @filters;
     my %cr2ns;
-    my $n;                                                                                                          # buffer
+    my $n;                                                                                                                  # buffer
     for $n ( $conf->{'skip_defaults_when_given_filters'} ? ( @_ ? @_ : @default_filters ) : ( @default_filters, @_ ) ) {
-        my $name = $n =~ m/[:']/ ? $n : $ns . "::$n";
+        my $name = $n =~ m/[:']/ ? $n : __PACKAGE__ . "::$n";
 
         if ( Module::Want::have_mod($name) ) {
             if ( my $cr = $name->can('normalize_maketext_string') ) {
@@ -223,7 +225,7 @@ Locale::Maketext::Utils::Phrase::Norm - Normalize and perform lint-like analysis
 
 =head1 VERSION
 
-This document describes Locale::Maketext::Utils::Phrase::Norm version 0.1
+This document describes Locale::Maketext::Utils::Phrase::Norm version 0.2
 
 =head1 SYNOPSIS
 
@@ -423,6 +425,8 @@ The included default filters are listed below in the order they are executed by 
 
 =item L<Consider|Locale::Maketext::Utils::Phrase::Norm::Consider>
 
+=item L<Escapes|Locale::Maketext::Utils::Phrase::Norm::Escapes>
+
 =back
 
 =head1 ANATOMY OF A FILTER MODULE
@@ -492,6 +496,10 @@ No bugs have been reported.
 Please report any bugs or feature requests to
 C<bug-locale-maketext-utils@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org>.
+
+=head1 SEE ALSO
+
+L<Locale::Maketext::Utils::Phrase::cPanel>
 
 =head1 AUTHOR
 

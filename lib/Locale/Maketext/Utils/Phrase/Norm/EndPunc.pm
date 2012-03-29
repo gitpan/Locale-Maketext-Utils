@@ -70,6 +70,6 @@ None
 
 =item Non title/label does not end with some sort of puncuation or bracket notation.
 
-Problem should be self explanatory. Ending puncuation is !, ?, ., :, bracket notation, or an ellipsis character,
+Problem should be self explanatory. Ending puncuation is not !, ?, ., :, bracket notation, or an ellipsis character.
 
 =back

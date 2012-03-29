@@ -1,5 +1,10 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.26  Thu Mar 29 12:40:23 2012
+    - Add cPanel normalization "recipe": Locale::Maketext::Utils::Phrase::cPanel
+    - fix POD in …::Norm::Markup …::Norm::EndPunc
+    - rt 76146: add filter for escapes
+    
 0.25  Thu Mar 22 12:39:55 2012
     - adjust output,url regex in 'Consider' filter to capture the first arg instead of all args for the example
     

@@ -67,10 +67,10 @@ Turns <>'" into appropriate bracket notation.
 
 =item consider if, instead of using straight double quotes, using “” is the right thing here (i.e. instead of bracket notation)
 
-This is issue when " is encountered.
+This is issued when " is encountered.
 
 =item consider if, instead of using a straight apostrophe, using ‘’ for single quoting and ’ for an apostrophe is the right thing here (i.e. instead of bracket notation)
 
-This is issue when " is encountered.
+This is issued when ' is encountered.
 
 =back
