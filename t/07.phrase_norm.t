@@ -1,11 +1,11 @@
-use Test::More tests => 439;
+use Test::More tests => 535;
 
 BEGIN {
     use_ok('Locale::Maketext::Utils::Phrase::Norm');
 }
 
-our $norm = Locale::Maketext::Utils::Phrase::Norm->new();
-my $spec = Locale::Maketext::Utils::Phrase::Norm->new( 'WhiteSpace', { 'skip_defaults_when_given_filters' => 1 } );
+our $norm = Locale::Maketext::Utils::Phrase::Norm->new( { 'run_extra_filters' => 1 } );
+my $spec = Locale::Maketext::Utils::Phrase::Norm->new( 'WhiteSpace', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 
 our %global_all_warnings = (
     'special' => [],
@@ -20,7 +20,7 @@ our %global_filter_warnings = (
 {
 
     # need to skip BeginUpper and EndPunc since it bumps 1 value in one test but not the others. Also Ellipsis so we don't have to factor in an extra change
-    local $norm = Locale::Maketext::Utils::Phrase::Norm->new( qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Escapes), { 'skip_defaults_when_given_filters' => 1 } );
+    local $norm = Locale::Maketext::Utils::Phrase::Norm->new( qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Escapes), { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 
     run_32_tests(
         'filter_name'    => 'WhiteSpace',
@@ -49,23 +49,54 @@ our %global_filter_warnings = (
 }
 
 run_32_tests(
-    'filter_name'    => 'NonBytesStr',
-    'filter_pos'     => 0,
-    'original'       => 'X \x{2026} N \N{WHITE SMILING FACE} u \u1F37A U U+22EE NU \N{U+22EE}.',
-    'modified'       => 'X [comment,non bytes unicode string “\x{2026}”] N [comment,charnames type string “\N{WHITE SMILING FACE}”] u [comment,non bytes unicode string “\u1F37A”] U [comment,non bytes unicode string “U+22EE”] NU [comment,charnames type string “\N{U+22EE}”].',
+    'filter_name' => 'NonBytesStr',
+    'filter_pos'  => 0,
+    'original'    => 'X \x{2026} N \N{WHITE SMILING FACE} u \u1F37A U Cruel U+22EE NU \N{U+22EE} X\'2026\' Ux2020 u"\u2026".',
+    'modified' =>
+      'X [comment,non bytes unicode string “\x{2026}”] N [comment,charnames.pm type string “\N{WHITE SMILING FACE}”] u [comment,unicode notation “\u1F37A”] U Cruel [comment,unicode notation “U+22EE”] NU [comment,charnames.pm type string “\N{U+22EE}”] [comment,unicode notation “X‘2026’”] [comment,unicode notation “Ux2020”] [comment,unicode notation “u“\u2026””].',
     'all_violations' => {
         'special' => [
             'non-bytes string (perl)',
-            'charname string (perl \N{})',
-            'non-bytes string (non-perl)',
+            'charnames.pm string notation',
+            'unicode code point notation (Python style)',
+            'unicode code point notation (C/C++/Java style)',
+            'unicode code point notation (alternate style)',
+            'unicode code point notation (visual notation style)',
+            'unicode code point notation (visual notation type 2 style)',
         ],
-        'default' => undef,    # undef means "same as special"
+        'default' => [
+            'non-bytes string (perl)',
+            'charnames.pm string notation',
+            'unicode code point notation (Python style)',
+            'unicode code point notation (C/C++/Java style)',
+            'unicode code point notation (alternate style)',
+            'unicode code point notation (visual notation style)',
+            'unicode code point notation (visual notation type 2 style)',
+            'Contains markup related characters',
+        ],
     },
-    'all_warnings'      => \%global_all_warnings,
-    'filter_violations' => undef,                      # undef means "same as all_violations"
-    'filter_warnings'   => \%global_filter_warnings,
-    'return_value'      => {
-        'special' => [ 0, 3,                             0, 1 ],
+    'all_warnings' => {
+        'special' => [],
+        'default' => [
+            'consider if, instead of using a straight apostrophe, using ‘’ for single quoting and ’ for an apostrophe is the right thing here (i.e. instead of bracket notation)',
+            'consider if, instead of using straight double quotes, using “” is the right thing here (i.e. instead of bracket notation)',
+        ],
+    },
+    'filter_violations' => {
+        'special' => [
+            'non-bytes string (perl)',
+            'charnames.pm string notation',
+            'unicode code point notation (Python style)',
+            'unicode code point notation (C/C++/Java style)',
+            'unicode code point notation (alternate style)',
+            'unicode code point notation (visual notation style)',
+            'unicode code point notation (visual notation type 2 style)',
+        ],
+        'default' => undef,
+    },
+    'filter_warnings' => {},
+    'return_value'    => {
+        'special' => [ 0, 7,                             0, 1 ],
         'default' => undef, # undef means "same as special"
     },
     'diag' => 0,
@@ -149,7 +180,7 @@ run_32_tests(
     'diag' => 0,
 );
 {
-    my $ell = Locale::Maketext::Utils::Phrase::Norm->new( 'Ellipsis', { 'skip_defaults_when_given_filters' => 1 } );
+    my $ell = Locale::Maketext::Utils::Phrase::Norm->new( 'Ellipsis', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
     for my $good (
         ' … I am … good, you …',                                                    # normal spaces
         ' … I am … good, you …',                                                # character (OSX: ⌥space)
@@ -165,7 +196,7 @@ run_32_tests(
 {
 
     # need to skip BeginUpper and Whitespace since it bumps 1 value in one test but not the others.
-    local $norm = Locale::Maketext::Utils::Phrase::Norm->new( qw(NonBytesStr Grapheme Ampersand Markup Ellipsis EndPunc Escapes), { 'skip_defaults_when_given_filters' => 1 } );
+    local $norm = Locale::Maketext::Utils::Phrase::Norm->new( qw(NonBytesStr Grapheme Ampersand Markup Ellipsis EndPunc Escapes), { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 
     run_32_tests(
         'filter_name'    => 'Ellipsis',
@@ -288,7 +319,7 @@ run_32_tests(
     'filter_name'    => 'Consider',
     'filter_pos'     => 8,
     'original'       => 'X [output,url,_1] [output,url,http://search.cpan.org] Y.',
-    'modified'       => 'X [output,url,_1] [output,url,why harcode “http://search.cpan.org”] Y.',
+    'modified'       => 'X [output,url,_1] [output,url,why hardcode “http://search.cpan.org”] Y.',
     'all_violations' => {
         'special' => [],
         'default' => undef,    # undef means "same as special"
@@ -314,7 +345,7 @@ run_32_tests(
     'filter_name'    => 'Consider',
     'filter_pos'     => 8,
     'original'       => 'X [output,url,_1] [output,url,http://search.cpan.org,foo,bar] Y.',
-    'modified'       => 'X [output,url,_1] [output,url,why harcode “http://search.cpan.org”,foo,bar] Y.',
+    'modified'       => 'X [output,url,_1] [output,url,why hardcode “http://search.cpan.org”,foo,bar] Y.',
     'all_violations' => {
         'special' => [],
         'default' => undef,    # undef means "same as special"
@@ -337,6 +368,19 @@ run_32_tests(
 
 # Simple bare var
 # 32k more: for (1..1001) {
+
+# TODO: Why does the run_32_tests() below do this:
+    # perl -w -Ilib t/07.phrase_norm.t
+        # ok 365 - “Consider” special: FILT get_warnings()
+        # # Norm.pm Consider filter
+        # Use of uninitialized value in join or string at (eval 240) line 2.
+        # Use of uninitialized value in join or string at (eval 240) line 2.
+        # Use of uninitialized value in join or string at (eval 240) line 2.
+        # Use of uninitialized value in join or string at (eval 240) line 2.
+        # Use of uninitialized value in join or string at (eval 240) line 2.
+        # Use of uninitialized value in join or string at (eval 240) line 2.
+        # ok 366 - default: RES get_status()
+        
 run_32_tests(
     'filter_name'    => 'Consider',
     'filter_pos'     => 8,
@@ -395,7 +439,92 @@ run_32_tests(
     'get_status_is_warnings' => 0,
     'diag'                   => 0,
 );
-my $esc_filt = Locale::Maketext::Utils::Phrase::Norm->new( 'Escapes', { 'skip_defaults_when_given_filters' => 1 } );
+
+run_32_tests(
+    'filter_name'    => 'Compiles',
+    'filter_pos'     => 10,
+    'original'       => 'Hello [_1',
+    'modified'       => '[comment,Bracket Notation Error: Unterminated bracket group, in: Hello ~[_1]',
+    'all_violations' => {
+        'special' => [
+            'Bracket Notation Error',
+        ],
+        'default' => undef,
+    },
+    'all_warnings' => {
+        'default' => [],
+        'special' => undef,
+    },
+    'filter_violations' => {
+        'special' => [
+            'Bracket Notation Error',
+        ],
+    },
+    'filter_warnings' => {},    # undef means "same as all_warnings"
+    'return_value'    => {
+        'special' => [ 0, 1,                             0, 1 ],
+        'default' => undef, # undef means "same as special"
+    },
+    'diag' => 0,
+);
+
+run_32_tests(
+    'filter_name'    => 'Compiles',
+    'filter_pos'     => 10,
+    'original'       => 'Hello _1]',
+    'modified'       => '[comment,Bracket Notation Error: Unbalanced \'~]\', in: Hello _1~]]',
+    'all_violations' => {
+        'special' => [
+            'Bracket Notation Error',
+        ],
+        'default' => undef,
+    },
+    'all_warnings' => {
+        'default' => [],
+        'special' => undef,
+    },
+    'filter_violations' => {
+        'special' => [
+            'Bracket Notation Error',
+        ],
+    },
+    'filter_warnings' => {},    # undef means "same as all_warnings"
+    'return_value'    => {
+        'special' => [ 0, 1,                             0, 1 ],
+        'default' => undef, # undef means "same as special"
+    },
+    'diag' => 0,
+);
+
+run_32_tests(
+    'filter_name'    => 'Compiles',
+    'filter_pos'     => 10,
+    'original'       => 'Hello [i_do_not_exist]',
+    'modified'       => '[comment,Bracket Notation Error: “Locale::Maketext::Utils” does not have a method “i_do_not_exist” in: Hello ~[i_do_not_exist~]]',
+    'all_violations' => {
+        'special' => [
+            'Bracket Notation Error',
+        ],
+        'default' => undef,
+    },
+    'all_warnings' => {
+        'default' => [],
+        'special' => undef,
+    },
+    'filter_violations' => {
+        'special' => [
+            'Bracket Notation Error',
+        ],
+    },
+    'filter_warnings' => {},    # undef means "same as all_warnings"
+    'return_value'    => {
+        'special' => [ 0, 1,                             0, 1 ],
+        'default' => undef, # undef means "same as special"
+    },
+    'diag' => 0,
+);
+
+my $esc_filt = Locale::Maketext::Utils::Phrase::Norm->new( 'Escapes', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 my $esc_filt_res = $esc_filt->normalize('I am \x{263A}.');
 is( $esc_filt_res->get_aggregate_result(), 'I am \x{263A}.', 'Escapes–leaves \x alone.' );
 
@@ -423,8 +552,8 @@ is( $valid->get_violation_count(), 0, "valid end …: RES get_violation_count()"
 sub run_32_tests {
     my %args = @_;
 
-    diag("$args{'filter_name'} filter");
-    my $spec = Locale::Maketext::Utils::Phrase::Norm->new( $args{'filter_name'}, { 'skip_defaults_when_given_filters' => 1 } );
+    diag("Norm.pm $args{'filter_name'} filter");
+    my $spec = Locale::Maketext::Utils::Phrase::Norm->new( $args{'filter_name'}, { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 
     if ( !defined $args{'return_value'}{'special'} ) {
         $args{'return_value'}{'special'} = $args{'return_value'}{'default'};

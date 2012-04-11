@@ -11,6 +11,8 @@ t/05.assets.t
 t/06.cache.t
 t/07.phrase_norm.t
 t/08.cpanel_norm.t
+t/09.run_extra_filters.t
+t/10.maketext_object.t
 t/lib/MyTestLocale.pm
 t/lib/MyTestLocale/es.pm
 t/lib/MyTestLocale/fr.pm
@@ -33,5 +35,6 @@ lib/Locale/Maketext/Utils/Phrase/Norm/Markup.pm
 lib/Locale/Maketext/Utils/Phrase/Norm/WhiteSpace.pm
 lib/Locale/Maketext/Utils/Phrase/Norm/Consider.pm
 lib/Locale/Maketext/Utils/Phrase/Norm/Escapes.pm
+lib/Locale/Maketext/Utils/Phrase/Norm/Compiles.pm
 
 META.yml                                 Module meta-data (added by MakeMaker)

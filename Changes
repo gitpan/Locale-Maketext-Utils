@@ -1,5 +1,11 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.27  Mon Apr  9 13:20:29 2012
+    - rt 76332: non-bytes string (non-perl) U notation check fix
+    - rt 76360: Add a filter for phrase compiles OK
+    - Add 'run_extra_filters' to object
+        - 'run_extra_filters'-ify EndPunc, BeginUpper, Escape, and "Bare Variable" in Consider
+
 0.26  Thu Mar 29 12:40:23 2012
     - Add cPanel normalization "recipe": Locale::Maketext::Utils::Phrase::cPanel
     - fix POD in …::Norm::Markup …::Norm::EndPunc

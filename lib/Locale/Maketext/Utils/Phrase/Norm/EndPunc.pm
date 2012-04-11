@@ -6,6 +6,8 @@ use warnings;
 sub normalize_maketext_string {
     my ($filter) = @_;
 
+    return $filter->return_value_noop() if !$filter->run_extra_filters();
+
     my $string_sr = $filter->get_string_sr();
 
     if ( ${$string_sr} !~ m/[\!\?\.\:\]…]$/ ) {    # ? TODO ? smarter check that is is actual bracket notation and not just a string ?
@@ -73,3 +75,7 @@ None
 Problem should be self explanatory. Ending puncuation is not !, ?, ., :, bracket notation, or an ellipsis character.
 
 =back
+
+=head1 Entire filter only runs under extra filter mode.
+
+See L<Locale::Maketext::Utils::Phrase::Norm/extra filters> for more details.

@@ -9,7 +9,7 @@ use Module::Want ();
 use Carp         ();
 
 # IF YOU CHANGE THIS CHANGE THE “DEFAULT FILTERS” POD SECTION ALSO
-my @default_filters = qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellipsis BeginUpper EndPunc Consider Escapes);    # IF YOU CHANGE THIS CHANGE THE “DEFAULT FILTERS” POD SECTION ALSO
+my @default_filters = qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellipsis BeginUpper EndPunc Consider Escapes Compiles);    # IF YOU CHANGE THIS CHANGE THE “DEFAULT FILTERS” POD SECTION ALSO
 
 # IF YOU CHANGE THIS CHANGE THE “DEFAULT FILTERS” POD SECTION ALSO
 
@@ -17,13 +17,13 @@ my @default_filters = qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellips
 
 sub new {
     my $ns = shift;
-    $ns = ref($ns) if ref($ns);                                                                                             # just the class ma'am
+    $ns = ref($ns) if ref($ns);                                                                                                      # just the class ma'am
 
     my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
 
     my @filters;
     my %cr2ns;
-    my $n;                                                                                                                  # buffer
+    my $n;                                                                                                                           # buffer
     for $n ( $conf->{'skip_defaults_when_given_filters'} ? ( @_ ? @_ : @default_filters ) : ( @default_filters, @_ ) ) {
         my $name = $n =~ m/[:']/ ? $n : __PACKAGE__ . "::$n";
 
@@ -48,7 +48,67 @@ sub new {
         return;
     }
 
-    return bless { 'filters' => \@filters, 'cache' => {}, 'filter_namespace' => \%cr2ns }, $ns;
+    my $run_extra_filters = exists $conf->{'run_extra_filters'} ? ( $conf->{'run_extra_filters'} ? 1 : 0 ) : 0;
+
+    my $new_obj = bless {
+        'filters'           => \@filters,
+        'cache'             => {},
+        'filter_namespace'  => \%cr2ns,
+        'run_extra_filters' => $run_extra_filters,
+        'maketext_object'   => undef,
+    }, $ns;
+
+    if ( exists $conf->{'maketext_object'} ) {
+        $new_obj->set_maketext_object( $conf->{'maketext_object'} ) || return;
+    }
+
+    return $new_obj;
+}
+
+sub set_maketext_object {
+    my ( $self, $mt_obj ) = @_;
+    if ( ref($mt_obj) ) {
+        if ( $mt_obj->can('makethis') ) {
+            $self->delete_cache();
+            $self->{'maketext_object'} = $mt_obj;
+        }
+        else {
+            Carp::carp('Given maketext object does not have a makethis() method.');
+            return;
+        }
+    }
+    else {
+        Carp::carp('Given maketext object is not a reference.');
+        return;
+    }
+
+    return $self->{'maketext_object'};
+}
+
+sub get_maketext_object_or_package {
+    return $_[0]->{'maketext_object'} if defined $_[0]->{'maketext_object'};
+
+    # Do not delete cache since filters clas call this mid stream
+
+    require Locale::Maketext::Utils;
+    $_[0]->{'maketext_object'} = 'Locale::Maketext::Utils';
+
+    return $_[0]->{'maketext_object'};
+}
+
+sub enable_extra_filters {
+    $_[0]->delete_cache();
+    $_[0]->{'run_extra_filters'} = 1;
+}
+
+sub disable_extra_filters {
+    $_[0]->delete_cache();
+    $_[0]->{'run_extra_filters'} = 0;
+}
+
+sub run_extra_filters {
+    return 1 if $_[0]->{'run_extra_filters'};
+    return;
 }
 
 sub delete_cache {
@@ -72,7 +132,6 @@ sub normalize {
 
     my $cr;    # buffer
     foreach $cr ( @{ $self->{'filters'} } ) {
-
         push @{ $self->{'cache'}{$string}{'filter_results'} }, bless {
             'status'     => 1,
             'package'    => $self->{'filter_namespace'}{"$cr"},
@@ -80,6 +139,12 @@ sub normalize {
             'new_str'    => $string,
             'violations' => [],                                   # status 0
             'warnings'   => [],                                   # status -1 (true but not 1)
+            '_get_mt'    => sub {
+                return $self->get_maketext_object_or_package();
+            },
+            '_run_extra' => sub {
+                return $self->run_extra_filters();
+            },
           },
           'Locale::Maketext::Utils::Phrase::Norm::_Res::Filter';
 
@@ -96,21 +161,28 @@ sub normalize {
                 'new_str'    => $self->{'cache'}{$string}{'aggregate_result'},
                 'violations' => [],                                              # status 0
                 'warnings'   => [],                                              # status -1 (true but not 1)
+                '_get_mt'    => sub {
+                    return $self->get_maketext_object_or_package();
+                },
+                '_run_extra' => sub {
+                    return $self->run_extra_filters();
+                },
               },
               'Locale::Maketext::Utils::Phrase::Norm::_Res::Filter';
+
             $cr->($agg_filt);
             $self->{'cache'}{$string}{'aggregate_result'} = $agg_filt->get_new_str();
         }
 
         # Update string's overall result
-        $self->{'cache'}{$string}->{'violation_count'} += $violation_count;
-        $self->{'cache'}{$string}->{'warning_count'}   += $warning_count;
+        $self->{'cache'}{$string}{'violation_count'} += $violation_count;
+        $self->{'cache'}{$string}{'warning_count'}   += $warning_count;
         if ( $self->{'cache'}{$string}->{'status'} ) {
             if ( !$filter_rc ) {
-                $self->{'cache'}{$string}->{'status'} = $filter_rc;
+                $self->{'cache'}{$string}{'status'} = $filter_rc;
             }
             elsif ( $self->{'cache'}{$string}->{'status'} != -1 ) {
-                $self->{'cache'}{$string}->{'status'} = $filter_rc;
+                $self->{'cache'}{$string}{'status'} = $filter_rc;
             }
         }
 
@@ -152,6 +224,14 @@ sub filters_modify_string {
 }
 
 package Locale::Maketext::Utils::Phrase::Norm::_Res::Filter;
+
+sub run_extra_filters {
+    return $_[0]->{'_run_extra'}->();
+}
+
+sub get_maketext_object_or_package {
+    return $_[0]->{'_get_mt'}->();
+}
 
 sub add_violation {
     my ( $self, $error ) = @_;
@@ -206,6 +286,10 @@ sub get_violation_count {
 sub return_value {
     my ($self) = @_;
     return ( $self->{'status'}, $self->get_violation_count(), $self->get_warning_count(), $self->filter_modifies_string() );
+}
+
+sub return_value_noop {
+    return ( 2, 0, 0, 0 );
 }
 
 sub filter_modifies_string {
@@ -267,6 +351,36 @@ e.g. Given 'Locale::Maketext::Utils::Phrase::Norm::MyCoolFilter' you can pass th
     
     my $norm = Locale::Maketext::Utils::Phrase::Norm->new('My::Filter::XYZ', { 'skip_defaults_when_given_filters' => 1 }); # only do My::Filter::XYZ the filter
 
+The options are outlined below and are all optional:
+
+=over 4
+
+=item 'skip_defaults_when_given_filters'
+
+Boolean.
+
+When false (default) your filters are appended to the list of default filters.
+
+When true the default list of filters is not used.
+
+=item 'maketext_object'
+
+An object that can be used by filters should they need one to perform their task. Currently, it must have a makethis() method.
+
+The main object and filter each have a L<get_maketext_object_or_package()> method to fetch this when needed.
+
+If you did not specify an argument here L<get_maketext_object_or_package()> returns the class L<Locale::Maketext::Utils>. That means all the cool stuff in your locale object that you might want to use in your filter will not be available.
+
+=item 'run_extra_filters'
+
+Boolean.
+
+When false (default) L</extra filters> are not executed.
+
+When true the L</extra filters> are executed.
+
+=back
+
 Currently there is only the one option as in the example above. The key’s name and example above outline what it is for and how to use it.
 
 =back 
@@ -282,6 +396,30 @@ Takes a phrase as the only argument and returns a result object (documented in L
 The result of normalize() is cached internally so calling it subsequent times with the same string won’t result in it being reprocessed.
 
 This method deletes the internal cache. Returns the hashref that was removed.
+
+=head3 get_maketext_object_or_package()
+
+Returns the object you intastiated the L</"Main object"> with.
+
+If you did not specify an argument the class L<Locale::Maketext::Utils> is used. That means all the cool stuff in your locale object that you might want to use in your filter will not be available.
+
+=head3 set_maketext_object() 
+
+Takes the same object you’d pass to new() via ‘maketext_object’.
+
+This is what will be used on subsequent calls to normalize().
+
+=head3 run_extra_filters()
+
+Boolean return value of if we are running L</extra filters> or not.
+
+=head3 enable_extra_filters()
+
+No arguments, enables the running of any L</extra filters> on subsequent calls to normalize().
+
+=head3 disable_extra_filters()
+
+No arguments, disables the running of any L</extra filters> on subsequent calls to normalize().
 
 =head2 Result Object
 
@@ -346,6 +484,28 @@ Returns a SCALAR reference to the modified version of the string that the filter
 returns an array of the status, violation count, warning count, and filter_modifies_string().
 
 It is what the filter’s normalize_maketext_string() should return;
+
+=head4 get_maketext_object_or_package()
+
+Returns the object you intastiated the L</"Main object"> with.
+
+If you did not specify an argument the class L<Locale::Maketext::Utils> is used. That means all the cool stuff in your locale object that you might want to use in your filter will not be available.
+
+=head4 run_extra_filters()
+
+Returns a boolean value of if we are running extra filters or not.
+
+    if ($filter->run_extra_filters()) {
+        # do extar check for violations/warnings here
+    }
+
+You can use this to check if the filter should run certain tests or not. You can even skip an entire filter by use of L<return_value_noop()>.
+
+=head4 return_value_noop()
+
+Get an appropriate L<return_value()> for when the entire filter falls under the category of L</extra filters>.
+
+    return $filter->return_value_noop() if !$filter->run_extra_filters();
 
 =head3 Intended for use when processing results.
 
@@ -421,13 +581,29 @@ The included default filters are listed below in the order they are executed by 
 
 =item L<BeginUpper|Locale::Maketext::Utils::Phrase::Norm::BeginUpper>
 
+Falls under L</extra filters> currently.
+
 =item L<EndPunc|Locale::Maketext::Utils::Phrase::Norm::EndPunc>
+
+Falls under L</extra filters> currently.
 
 =item L<Consider|Locale::Maketext::Utils::Phrase::Norm::Consider>
 
 =item L<Escapes|Locale::Maketext::Utils::Phrase::Norm::Escapes>
 
+Falls under L</extra filters> currently.
+
+=item L<Compiles|Locale::Maketext::Utils::Phrase::Norm::Compiles>
+
+Has one check that falls under L</extra filters> currently.
+
 =back
+
+=head2 extra filters
+
+It may be desireable for some filters to not run by default but still be easily applied when needed. 
+
+The extra filter mechanism allows for this as documented specifically throught this POD.
 
 =head1 ANATOMY OF A FILTER MODULE
 
@@ -474,6 +650,14 @@ new() was not able to load the filter %s, the actual error comes from perl via $
 =item C<< Filter list is empty! >>
 
 After all initialization and no other errors the list of filters is somehow empty.
+
+=item C<< Given maketext object does not have a makethis() method. >>
+
+The value of the maketext_object key you passed to new() or the value passed to set_maketext_object() does not define a makethis() method.
+
+=item C<< Given maketext object is not a reference. >>
+
+The value of the maketext_object key you passed to new() or the value passed to set_maketext_object() is not an object.
 
 =back
 

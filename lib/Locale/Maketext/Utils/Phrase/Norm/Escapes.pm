@@ -6,6 +6,8 @@ use warnings;
 sub normalize_maketext_string {
     my ($filter) = @_;
 
+    return $filter->return_value_noop() if !$filter->run_extra_filters();
+
     my $string_sr = $filter->get_string_sr();
 
     # This will handle previously altered characters like " in  the aggregate results
@@ -51,3 +53,7 @@ A sequence of \n will be replaced w/ [comment,escaped sequence “n”], \" [com
 =head1 possible warnings
 
 None
+
+=head1 Entire filter only runs under extra filter mode.
+
+See L<Locale::Maketext::Utils::Phrase::Norm/extra filters> for more details.

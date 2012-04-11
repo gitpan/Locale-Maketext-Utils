@@ -48,3 +48,7 @@ A sequence of \xe2\x98\xba\xe2\x80\xa6 will be replaced w/ [comment,grapheme “
 =head1 possible warnings
 
 None
+
+=head1 Entire filter only runs under extra filter
+
+See L<Locale::Maketext::Utils::Phrase::Norm/extra filters> for more details.

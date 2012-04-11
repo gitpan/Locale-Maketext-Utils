@@ -40,3 +40,26 @@ Description here
 =head1 possible warnings
 
 None
+
+
+=for use when the entire filter only runs under extra filter mode:
+    
+    =head1 Entire filter only runs under extra filter mode.
+    
+    See L<Locale::Maketext::Utils::Phrase::Norm/extra filters> for more details.
+
+
+=for use when one or more, but not all, checks in a filter only run under extra filter mode:
+    
+    =head1 Checks only run under extra filter mode:
+    
+    =over 4
+    
+    =item violation/warning one text here
+    
+    =item violation/warning two text here
+    
+    =back
+    
+    See L<Locale::Maketext::Utils::Phrase::Norm/extra filters> for more details.
+

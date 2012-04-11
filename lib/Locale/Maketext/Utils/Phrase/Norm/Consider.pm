@@ -41,30 +41,33 @@ sub normalize_maketext_string {
     for my $bn_ar (@bn) {
         my ( $before, $bn, $after, $array_index ) = @{$bn_ar};
 
-        # bare variable:
-        #   Simple: [_1]
-        #   TODO: Complex: [output,strong,_1] (but not [numf,_1] or [output,url,_1…]), - may need to wait for phrase-as-class obj
-        if ( $bn =~ m/^\[($bn_var)\]$/ ) {    # TODO: && “Complex” capture here
+        if ( $filter->run_extra_filters() ) {
 
-            # unless the bare bracket notation  …
-            unless (
-                ( $array_index == $#bn && $before =~ m/\:(?:\x20|\xc2\xa0)/ && ( !defined $after || $after eq '' ) )    # … is a trailing '…: [_2]'
-                or
-                ( $before !~ m/(?:\x20|\xc2\xa0)$/ && $after !~ m/^(?:\x20|\xc2\xa0)/ )                                 # … is surrounded by non-whitespace already
-                or
-                ( $before =~ m/,(?:\x20|\xc2\xa0)$/ && $after =~ m/^,/ )                                                # … is in a comma reference
-              ) {
-                ${$string_sr} =~ s/(\Q$bn\E)/“$1”/;
-                $has_bare++;
+            # bare variable:
+            #   Simple: [_1]
+            #   TODO: Complex: [output,strong,_1] (but not [numf,_1] or [output,url,_1…]), - may need to wait for phrase-as-class obj
+            if ( $bn =~ m/^\[($bn_var)\]$/ ) {    # TODO: && “Complex” capture here
+
+                # unless the bare bracket notation  …
+                unless (
+                    ( $array_index == $#bn && $before =~ m/\:(?:\x20|\xc2\xa0)/ && ( !defined $after || $after eq '' ) )    # … is a trailing '…: [_2]'
+                    or
+                    ( $before !~ m/(?:\x20|\xc2\xa0)$/ && $after !~ m/^(?:\x20|\xc2\xa0)/ )                                 # … is surrounded by non-whitespace already
+                    or
+                    ( $before =~ m/,(?:\x20|\xc2\xa0)$/ && $after =~ m/^,/ )                                                # … is in a comma reference
+                  ) {
+                    ${$string_sr} =~ s/(\Q$bn\E)/“$1”/;
+                    $has_bare++;
+                }
             }
         }
 
         # Do not hardcode URL in [output,url]:
-        if ( $bn =~ m/^\[output,url,([^\,]*)(,.*|)\]$/ ) {                                                              # will not match a URL w/ escaped comma (i.e. ~,) but then that'd be wrong anyway so we should be good
+        if ( $bn =~ m/^\[output,url,([^\,]*)(,.*|)\]$/ ) {                                                                  # will not match a URL w/ escaped comma (i.e. ~,) but then that'd be wrong anyway so we should be good
             my $url  = $1;
             my $args = $2;
             if ( $url !~ m/^($bn_var)$/ ) {
-                ${$string_sr} =~ s/(\Q$bn\E)/\[output,url,why harcode “$url”$args\]/;
+                ${$string_sr} =~ s/(\Q$bn\E)/\[output,url,why hardcode “$url”$args\]/;
                 $has_hardurl++;
             }
         }
@@ -168,7 +171,7 @@ That applies even if it is decorated some way:
     'The checksum was <code></code>.'
     'The checksum was <code>BAD</code>.'
 
-It promotes evil partial phrases (i.e. that are untranslatable whish is sort of the opposite of localizing things no?)
+It promotes evil partial phrases (i.e. that are untranslatable which is sort of the opposite of localizing things no?)
 
     $lh->maketext('The checksum was [_1].', $lh->maketext('inserted into the database)); # !!!! DON’T DO THIS !!!!
 
@@ -207,3 +210,13 @@ Depending on what you’re doing other things might work too:
 =back
 
 =back
+
+=head1 Checks only run under extra filter mode:
+
+=over 4
+
+=item Bare variable can lead to ambiguous output
+
+=back
+
+See L<Locale::Maketext::Utils::Phrase::Norm/extra filters> for more details.

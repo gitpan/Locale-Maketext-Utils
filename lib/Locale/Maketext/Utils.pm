@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.26';
+$Locale::Maketext::Utils::VERSION = '0.27';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -128,6 +128,17 @@ sub init {
         }
     );
 }
+
+# sub __WS {
+#     my ($string) = @_;
+#     $string =~ s/\A(?:\s+|\xc2\xa0)+//xms;      # remove leading white space
+#     $string =~ s/(?:\s+|\xc2\xa0){2,}/ /xms;    # collapse multiple internal white space
+#     $string =~ s/(?:\s+|\xc2\xa0)+\z//xms;      # remove trailing white space
+#     if ( substr( $string, 0, 3 ) eq "\xE2\x80\xA6" ) {
+#         $string = " $string";
+#     }
+#     return $string;
+# }
 
 sub makethis {
     my ( $lh, $phrase, @phrase_args ) = @_;
@@ -1274,6 +1285,7 @@ sub output_em {
 
 sub output_url {
     my ( $lh, $url, @args ) = @_;
+    $url ||= '';    # carp() ?
 
     my ( $br_mod, %output_config ) = @args % 2 ? @args : ( undef, @args );
 
