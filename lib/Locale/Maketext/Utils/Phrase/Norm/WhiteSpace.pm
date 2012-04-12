@@ -30,7 +30,7 @@ sub normalize_maketext_string {
     # The only WS possible after that is $space_and_no_break_space
 
     # remove beginning and trailing white space
-    if ( ${$string_sr} !~ m/\A \xE2\x80\xA6/xms && ${$string_sr} =~ s/\A($space_and_no_break_space+)//xms ) {
+    if ( ${$string_sr} !~ m/\A \xE2\x80\xA6/ms && ${$string_sr} =~ s/\A($space_and_no_break_space+)//xms ) {
         my $startswith = $1;
         if ( substr( ${$string_sr}, 0, 3 ) eq "\xE2\x80\xA6" ) {
             if ( $startswith =~ m/\xc2\xa0/ ) {

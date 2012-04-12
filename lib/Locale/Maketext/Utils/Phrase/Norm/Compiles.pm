@@ -8,7 +8,7 @@ sub normalize_maketext_string {
     my ($filter) = @_;
 
     my $string = $filter->get_orig_str();
-    my $mt_obj = $filter->get_maketext_object_or_package();
+    my $mt_obj = $filter->get_maketext_object();
 
     local $SIG{'__DIE__'};    # cpanel specific: ensure a benign eval does not trigger cpsrvd's DIE handler (may be made moot by internal case 50857)
     eval { $mt_obj->makethis($string); };

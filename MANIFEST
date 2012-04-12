@@ -12,7 +12,8 @@ t/06.cache.t
 t/07.phrase_norm.t
 t/08.cpanel_norm.t
 t/09.run_extra_filters.t
-t/10.maketext_object.t
+t/10.mock.t
+t/11.maketext_object.t
 t/lib/MyTestLocale.pm
 t/lib/MyTestLocale/es.pm
 t/lib/MyTestLocale/fr.pm
@@ -21,6 +22,7 @@ t/lib/MyTestLocale/Utils.pm
 t/lib/MyTestLocale/Utils/Misc.pm
 lib/Locale/Maketext/Utils.pm
 lib/Locale/Maketext/Utils.pod
+lib/Locale/Maketext/Utils/Mock.pm
 lib/Locale/Maketext/Utils/Phrase/Core.pm
 lib/Locale/Maketext/Utils/Phrase/cPanel.pm
 lib/Locale/Maketext/Utils/Phrase/Norm.pm

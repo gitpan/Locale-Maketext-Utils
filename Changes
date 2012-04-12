@@ -1,5 +1,13 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.28  Wed Apr 11 08:52:46 CDT 2012
+    - have default for Norm.pm's maketext_object be a mock obj (class is problematic per code comment)
+        - change get_maketext_object_or_package() to get_maketext_object
+    - Add Locale::Maketext::Utils::Mock
+    - rt 76491:POD: remove sentence erroneously left in place in 0.27 update
+    - spiff up 'Ellipsis' to account for i.e., e.g., && bracket notation w/ concurrent ,, to denote empty string
+    - fix WS regex
+
 0.27  Mon Apr  9 13:20:29 2012
     - rt 76332: non-bytes string (non-perl) U notation check fix
     - rt 76360: Add a filter for phrase compiles OK

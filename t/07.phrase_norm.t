@@ -1,4 +1,4 @@
-use Test::More tests => 535;
+use Test::More tests => 543;
 
 BEGIN {
     use_ok('Locale::Maketext::Utils::Phrase::Norm');
@@ -200,16 +200,16 @@ run_32_tests(
 
     run_32_tests(
         'filter_name'    => 'Ellipsis',
-        'filter_pos'     => 4,                                                          # is 5 with no args to new()
-        'original'       => " … I… am .. bad ,,, you?",
-        'modified'       => " … I[comment, invalid ellipsis] am … bad … you?",
+        'filter_pos'     => 4,                                                                    # is 5 with no args to new()
+        'original'       => " … I… am .. bad ,,, you e.g., you?",
+        'modified'       => " … I[comment, invalid ellipsis] am … bad … you e.g., you?",
         'all_violations' => {
             'special' => [
                 'multiple period/comma instead of ellipsis character',
                 'initial ellipisis needs to be preceded by a normal space',
                 'invalid initial, medial, or final ellipsis',
             ],
-            'default' => undef,                                                         # undef means "same as special"
+            'default' => undef,                                                                   # undef means "same as special"
         },
         'all_warnings'      => \%global_all_warnings,
         'filter_violations' => {
@@ -218,7 +218,7 @@ run_32_tests(
                 'initial ellipisis needs to be preceded by a normal space',
                 'invalid initial, medial, or final ellipsis',
             ],
-            'default' => undef,                                                         # undef means "same as special"
+            'default' => undef,                                                                   # undef means "same as special"
         },    # undef means "same as all_violations"
         'filter_warnings' => \%global_filter_warnings,
         'return_value'    => {
@@ -370,17 +370,17 @@ run_32_tests(
 # 32k more: for (1..1001) {
 
 # TODO: Why does the run_32_tests() below do this:
-    # perl -w -Ilib t/07.phrase_norm.t
-        # ok 365 - “Consider” special: FILT get_warnings()
-        # # Norm.pm Consider filter
-        # Use of uninitialized value in join or string at (eval 240) line 2.
-        # Use of uninitialized value in join or string at (eval 240) line 2.
-        # Use of uninitialized value in join or string at (eval 240) line 2.
-        # Use of uninitialized value in join or string at (eval 240) line 2.
-        # Use of uninitialized value in join or string at (eval 240) line 2.
-        # Use of uninitialized value in join or string at (eval 240) line 2.
-        # ok 366 - default: RES get_status()
-        
+# perl -w -Ilib t/07.phrase_norm.t
+# ok 365 - “Consider” special: FILT get_warnings()
+# # Norm.pm Consider filter
+# Use of uninitialized value in join or string at (eval 240) line 2.
+# Use of uninitialized value in join or string at (eval 240) line 2.
+# Use of uninitialized value in join or string at (eval 240) line 2.
+# Use of uninitialized value in join or string at (eval 240) line 2.
+# Use of uninitialized value in join or string at (eval 240) line 2.
+# Use of uninitialized value in join or string at (eval 240) line 2.
+# ok 366 - default: RES get_status()
+
 run_32_tests(
     'filter_name'    => 'Consider',
     'filter_pos'     => 8,
@@ -500,7 +500,7 @@ run_32_tests(
     'filter_name'    => 'Compiles',
     'filter_pos'     => 10,
     'original'       => 'Hello [i_do_not_exist]',
-    'modified'       => '[comment,Bracket Notation Error: “Locale::Maketext::Utils” does not have a method “i_do_not_exist” in: Hello ~[i_do_not_exist~]]',
+    'modified'       => '[comment,Bracket Notation Error: “Locale::Maketext::Utils::Mock::en” does not have a method “i_do_not_exist” in: Hello ~[i_do_not_exist~]]',
     'all_violations' => {
         'special' => [
             'Bracket Notation Error',
@@ -524,6 +524,21 @@ run_32_tests(
     'diag' => 0,
 );
 
+# existing BN method
+my $comp_filt = Locale::Maketext::Utils::Phrase::Norm->new( 'Compiles', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
+my $comp_filt_res = $comp_filt->normalize('Hello [format_bytes,_1].');
+ok( $comp_filt_res->get_status(),             "spec: Compiles.pm w/ existing BN method: RES get_status()" );
+ok( !$comp_filt_res->filters_modify_string(), "spec: Compiles.pm w/ existing BN method: RES filters_modify_string()" );
+is( $comp_filt_res->get_warning_count(),   0, "spec: Compiles.pm w/ existing BN method: RES get_warning_count()" );
+is( $comp_filt_res->get_violation_count(), 0, "spec: Compiles.pm w/ existing BN method: RES get_violation_count()" );
+
+my $norm_comp_filt_res = $norm->normalize('Hello [format_bytes,_1].');
+ok( $norm_comp_filt_res->get_status(),             "norm: Compiles w/ existing BN method: RES get_status()" );
+ok( !$norm_comp_filt_res->filters_modify_string(), "norm: Compiles w/ existing BN method: RES filters_modify_string()" );
+is( $norm_comp_filt_res->get_warning_count(),   0, "norm: Compiles w/ existing BN method: RES get_warning_count()" );
+is( $norm_comp_filt_res->get_violation_count(), 0, "norm: Compiles w/ existing BN method: RES get_violation_count()" );
+
+# escapes special cases
 my $esc_filt = Locale::Maketext::Utils::Phrase::Norm->new( 'Escapes', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 my $esc_filt_res = $esc_filt->normalize('I am \x{263A}.');
 is( $esc_filt_res->get_aggregate_result(), 'I am \x{263A}.', 'Escapes–leaves \x alone.' );
@@ -606,7 +621,7 @@ sub run_32_tests {
         my $violation_count = @{ $args{'all_violations'}{$label} };
         my $warning_count   = @{ $args{'all_warnings'}{$label} };
 
-        $args{'get_status_is_warnings'} ? is( $res->get_status(), '-1', "$label: RES get_status()" ) : ok( !$res->get_status(), "“$args{'filter_name'}” $label: RES get_status()" );
+        $args{'get_status_is_warnings'} ? is( $res->get_status(), '-1', "“$args{'filter_name'}” $label: RES get_status()" ) : ok( !$res->get_status(), "“$args{'filter_name'}” $label: RES get_status()" );
         ok( $args{'filter_does_not_modify_string'} ? !$res->filters_modify_string() : $res->filters_modify_string(), "“$args{'filter_name'}” $label: RES filter_modifies_string()" );
         is( $res->get_warning_count(),    $warning_count,    "“$args{'filter_name'}” $label: RES get_warning_count()" );
         is( $res->get_violation_count(),  $violation_count,  "“$args{'filter_name'}” $label: RES get_violation_count()" );
@@ -622,7 +637,8 @@ sub run_32_tests {
         $violation_count = @{ $args{'filter_violations'}{$label} };
         $warning_count   = @{ $args{'filter_warnings'}{$label} };
 
-        is( $filt->get_package(), "Locale::Maketext::Utils::Phrase::Norm::$args{'filter_name'}", "“$args{'filter_name'}” $label: FILT get_package()" );
+        # we do odd concat below so we can blanket update the all class names when building the cPanel.pm recipe version
+        is( $filt->get_package(), "Locale::Maketext::Utils::Phrase::" . "Norm::$args{'filter_name'}", "“$args{'filter_name'}” $label: FILT get_package()" );
         $args{'get_status_is_warnings'} ? is( $filt->get_status(), '-1', "“$args{'filter_name'}” $label: FILT get_status()" ) : ok( !$filt->get_status(), "“$args{'filter_name'}” $label: FILT get_status()" );
         ok( $args{'filter_does_not_modify_string'} ? !$filt->filter_modifies_string() : $filt->filter_modifies_string(), "“$args{'filter_name'}” $label: FILT filter_modifies_string()" );
         is( $filt->get_warning_count(),   $warning_count,   "“$args{'filter_name'}” $label: FILT get_warning_count()" );

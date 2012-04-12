@@ -51,10 +51,10 @@ does_carp_that_matches(
 ok( !$no_arg->normalize('Hello [chuck_norris]!')->get_status(),  'default fails on unknown method' );
 ok( $good_arg->normalize('Hello [chuck_norris]!')->get_status(), 'given works with otherwise unknown method' );
 
-# get_maketext_object_or_package();
-is( $no_arg->get_maketext_object_or_package(),          'Locale::Maketext::Utils', 'no maketext_object argument defaults to class name' );
-is( ref( $good_arg->get_maketext_object_or_package() ), 'TestApp::Localize::en',   'maketext_object argument is returned by get_maketext_object_or_package()' );
+# get_maketext_object();
+is( ref( $no_arg->get_maketext_object() ),   'Locale::Maketext::Utils::Mock::en', 'no maketext_object argument defaults to class name' );
+is( ref( $good_arg->get_maketext_object() ), 'TestApp::Localize::en',             'maketext_object argument is returned by get_maketext_object()' );
 
 # set_maketext_object()
-is( ref( $no_arg->set_maketext_object($ok_obj) ),     'TestApp::Localize::en', 'maketext_object argument returned in set_maketext_object()' );
-is( ref( $no_arg->get_maketext_object_or_package() ), 'TestApp::Localize::en', 'set_maketext_object() did chnage the object' );
+is( ref( $no_arg->set_maketext_object($ok_obj) ), 'TestApp::Localize::en', 'maketext_object argument returned in set_maketext_object()' );
+is( ref( $no_arg->get_maketext_object() ),        'TestApp::Localize::en', 'set_maketext_object() did chnage the object' );

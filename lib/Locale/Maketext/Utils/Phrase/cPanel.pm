@@ -8,6 +8,17 @@ $Locale::Maketext::Utils::Phrase::cPanel::VERSION = '0.1';
 use Locale::Maketext::Utils::Phrase::Norm ();
 use base 'Locale::Maketext::Utils::Phrase::Norm';
 
+# Mock Cpanel::Locale-specific bracket notation methods for the filters’ default maketext object:
+use Locale::Maketext::Utils::Mock ();
+Locale::Maketext::Utils::Mock->create_method(
+    {
+        'output_cpanel_error'        => undef,
+        'get_locale_name_or_nothing' => undef,
+        'get_locale_name'            => undef,
+        'get_user_locale_name'       => undef,
+    }
+);
+
 # If they ever diverge we simply need to:
 #  1. Update POD
 #  2. probably update t/08.cpanel_norm.t

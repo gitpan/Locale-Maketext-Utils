@@ -8,9 +8,28 @@ sub normalize_maketext_string {
 
     my $string_sr = $filter->get_string_sr();
 
-    if ( ${$string_sr} =~ s/[.,]{2,}/…/g ) {
+    # 1. placeholder for BN w/ empty string args: ',,'
+    while ( ${$string_sr} =~ m/(\[.*?\])/g ) {    # see note about this regex in Consider.pm
+        my $bn_match = $1;
+        if ( $bn_match =~ m/[,]{2,}/ ) {
+            my $bn_match_tmp = $bn_match;
+            $bn_match_tmp =~ s/([,]{2,})/my $n=CORE::length("$1");"MULTI_COMMA_IN_BN_$n"/ge;
+            ${$string_sr} =~ s/\Q$bn_match\E/$bn_match_tmp/;
+        }
+    }
+
+    # 2. look for multi's
+    if ( ${$string_sr} =~ s/(?:[.]{2,}|[,]{2,})/…/g ) {
         $filter->add_violation('multiple period/comma instead of ellipsis character');
     }
+
+    # 3. restore placeholder
+    ${$string_sr} =~ s/MULTI_COMMA_IN_BN_([0-9]+)/"," x "$1"/eg;
+
+    # TODO: output,latin so this occurance is more rare:
+    # if ( ${$string_sr} =~ s/([,.]{2,})/\[comment,should “$1” here be an ellipsis?\]/g ) {
+    #     $filter->add_warning('multiple concurrent period and comma');
+    # }
 
     if ( ${$string_sr} =~ s/^(|\xc2\xa0|\[output\,nbsp\])…/ …/ ) {
         $filter->add_violation('initial ellipisis needs to be preceded by a normal space');

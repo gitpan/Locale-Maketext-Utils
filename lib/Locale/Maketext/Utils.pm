@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.27';
+$Locale::Maketext::Utils::VERSION = '0.28';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -885,6 +885,36 @@ sub datetime {
 # sub output_gt   { return $_[0]->output_chr(62) }
 # sub output_apos { return $_[0]->output_chr(39) }
 # sub output_quot { return $_[0]->output_chr(34) }
+
+# sub output_codepoint {
+#     my $cp = $_[1];
+#     $cp =~ s/[^0-9a-fA-F]+//g;
+#     return if !$cp;
+#     return "U+$cp";
+# }
+#
+# my %latin = (
+#     'etc'   => 'etc.',            # et cetera: And [more|the rest|so on]
+#     'ie'    => 'i.e.',            # id est: that is
+#     'eg'    => 'e.g.',            # exempli gratia: for the sake of example
+#     'ps'    => 'p.s.',            # after what has been written
+#     'pps'   => 'p.p.s.',          # post post scriptum
+#     'etal'  => 'et al.',          # et alii: and others
+#     'cf'    => 'cf.',             # compare to
+#     'vs'    => 'vs',              # versus
+#     'v'     => 'v.',              # shorter version of vs
+#     'adhoc' => 'ad hoc',          # for this (improvised or made for a specific, immediate purpose)
+#     'adinf' => 'ad infinitum',    # to infinity
+#     'adint' => 'ad interim',      # or the meantime
+#     're'    => 'Re',              # by the thing, in the matter of
+#     'rip'   => 'R.I.P.',          # requiescat in pace
+#     'qv'    => 'q.v.',            # quod vide
+# );
+#
+# sub output_latin {
+#    return if !exists $latin{$_[1]};
+#    return $_[0]->makethis($latin{$_[1]}); # makethis() would allow for [output,abbr,…] and [output,acronym,…]
+# }
 
 sub output_nbsp {
 

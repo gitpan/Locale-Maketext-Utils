@@ -85,13 +85,13 @@ sub set_maketext_object {
     return $self->{'maketext_object'};
 }
 
-sub get_maketext_object_or_package {
+sub get_maketext_object {
     return $_[0]->{'maketext_object'} if defined $_[0]->{'maketext_object'};
 
     # Do not delete cache since filters clas call this mid stream
 
-    require Locale::Maketext::Utils;
-    $_[0]->{'maketext_object'} = 'Locale::Maketext::Utils';
+    require Locale::Maketext::Utils::Mock;
+    $_[0]->{'maketext_object'} = Locale::Maketext::Utils::Mock->get_handle();    # We can't do a class or else we get this sort of thing: Can't use string ("Locale::Maketext::Utils") as a HASH ref while "strict refs" in use at …/Locale/Maketext.pm line N.
 
     return $_[0]->{'maketext_object'};
 }
@@ -140,7 +140,7 @@ sub normalize {
             'violations' => [],                                   # status 0
             'warnings'   => [],                                   # status -1 (true but not 1)
             '_get_mt'    => sub {
-                return $self->get_maketext_object_or_package();
+                return $self->get_maketext_object();
             },
             '_run_extra' => sub {
                 return $self->run_extra_filters();
@@ -162,7 +162,7 @@ sub normalize {
                 'violations' => [],                                              # status 0
                 'warnings'   => [],                                              # status -1 (true but not 1)
                 '_get_mt'    => sub {
-                    return $self->get_maketext_object_or_package();
+                    return $self->get_maketext_object();
                 },
                 '_run_extra' => sub {
                     return $self->run_extra_filters();
@@ -229,7 +229,7 @@ sub run_extra_filters {
     return $_[0]->{'_run_extra'}->();
 }
 
-sub get_maketext_object_or_package {
+sub get_maketext_object {
     return $_[0]->{'_get_mt'}->();
 }
 
@@ -367,9 +367,9 @@ When true the default list of filters is not used.
 
 An object that can be used by filters should they need one to perform their task. Currently, it must have a makethis() method.
 
-The main object and filter each have a L<get_maketext_object_or_package()> method to fetch this when needed.
+The main object and filter each have a L<get_maketext_object()> method to fetch this when needed.
 
-If you did not specify an argument here L<get_maketext_object_or_package()> returns the class L<Locale::Maketext::Utils>. That means all the cool stuff in your locale object that you might want to use in your filter will not be available.
+If you did not specify an argument here L<get_maketext_object()> returns a L<Locale::Maketext::Utils::Mock> object. That means all the cool stuff in your locale object that you might want to use in your filter will not be available.
 
 =item 'run_extra_filters'
 
@@ -381,11 +381,9 @@ When true the L</extra filters> are executed.
 
 =back
 
-Currently there is only the one option as in the example above. The key’s name and example above outline what it is for and how to use it.
-
 =back 
 
-carp()s and returns false if there is some sort of failure (documented in L</"DIAGNOSTICS">).
+new() carp()s and returns false if there is some sort of failure (documented in L</"DIAGNOSTICS">).
 
 =head3 normalize()
 
@@ -397,11 +395,11 @@ The result of normalize() is cached internally so calling it subsequent times wi
 
 This method deletes the internal cache. Returns the hashref that was removed.
 
-=head3 get_maketext_object_or_package()
+=head3 get_maketext_object()
 
-Returns the object you intastiated the L</"Main object"> with.
+Returns the object you instantiated the L</"Main object"> with.
 
-If you did not specify an argument the class L<Locale::Maketext::Utils> is used. That means all the cool stuff in your locale object that you might want to use in your filter will not be available.
+If you did not specify an argument a L<Locale::Maketext::Utils::Mock> object is used. That means all the cool stuff in your locale object that you might want to use in your filter will not be available.
 
 =head3 set_maketext_object() 
 
@@ -485,11 +483,11 @@ returns an array of the status, violation count, warning count, and filter_modif
 
 It is what the filter’s normalize_maketext_string() should return;
 
-=head4 get_maketext_object_or_package()
+=head4 get_maketext_object()
 
-Returns the object you intastiated the L</"Main object"> with.
+Returns the object you instantiated the L</"Main object"> with.
 
-If you did not specify an argument the class L<Locale::Maketext::Utils> is used. That means all the cool stuff in your locale object that you might want to use in your filter will not be available.
+If you did not specify an argument a L<Locale::Maketext::Utils::Mock> object is used. That means all the cool stuff in your locale object that you might want to use in your filter will not be available.
 
 =head4 run_extra_filters()
 

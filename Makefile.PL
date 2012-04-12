@@ -1,6 +1,6 @@
 use ExtUtils::MakeMaker;
 
-# Note to self: cp 07.phrase_norm.t 08.cpanel_norm.t, s/Norm.om/cPanel.pm/, s/::Norm/::cPanel/ except the one in run_32_tests()
+# Note to self: cp t/07.phrase_norm.t t/08.cpanel_norm.t && perl -pi -e 's/Norm.pm/cPanel.pm/g;s/::Norm/::cPanel/g' t/08.cpanel_norm.t
 
 WriteMakefile(
     NAME              => 'Locale::Maketext::Utils',
