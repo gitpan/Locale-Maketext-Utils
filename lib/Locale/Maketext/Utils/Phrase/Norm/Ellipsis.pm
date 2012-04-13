@@ -46,14 +46,36 @@ sub normalize_maketext_string {
         $l{'ELLIPSIS_START'} = $1;
     }
 
-    while ( ${$string_sr} =~ m/(\x20|\xc2\xa0|\[output\,nbsp\])…(\x20|\xc2\xa0|\[output\,nbsp\])/ ) {
+    while ( ${$string_sr} =~ m/(\x20|\xc2\xa0|\[output\,nbsp\])…(\x20|\xc2\xa0|\[output\,nbsp\])/g ) {
         ${$string_sr} =~ s/(\x20|\xc2\xa0|\[output\,nbsp\])…(\x20|\xc2\xa0|\[output\,nbsp\])/ELLIPSIS_MEDIAL/;
         push @{ $l{'ELLIPSIS_MEDIAL'} }, [ $1, $2 ];
     }
 
     # 2. mark any remaining ones (that are not legit)
-    if ( ${$string_sr} =~ s/…/[comment, invalid ellipsis]/g ) {
-        $filter->add_violation('invalid initial, medial, or final ellipsis');
+    if ( ${$string_sr} =~ s/\A …(?!\x20|\xc2\xa0|\[output\,nbsp\])/ … / ) {
+        $filter->add_violation('initial ellipsis needs to be followed by a normal space or a non-break-space in bracket notation or character form');
+    }
+
+    if ( ${$string_sr} =~ s/…(?:\x20|\xc2\xa0|\[output\,nbsp\]|\s)+\z/…/ ) {
+        $filter->add_violation('final ellipsis should not be followed by anything');
+    }
+
+    if ( ${$string_sr} =~ m/…\z/ && ${$string_sr} !~ m/(?:\x20|\xc2\xa0|\[output\,nbsp\])…\z/ ) {
+        ${$string_sr} =~ s/…$/ …/;
+        $filter->add_violation('final ellipsis needs to be preceded by a normal space or a non-break-space in bracket notation or character form');
+    }
+
+    my $medial_prob = 0;
+    if ( ${$string_sr} =~ s/(.{1})((?:(?<!\x20)…|(?<!\xc2\xa0)…(?<!\[output\,nbsp\])…))(.{2})/$1 $2$3/g ) {
+        $medial_prob++;
+    }
+
+    if ( ${$string_sr} =~ s/(.{2})…(?!\x20|\xc2\xa0|\[output\,nbsp\]|\z)(.{1})/$1… $2/g ) {
+        $medial_prob++;
+    }
+
+    if ($medial_prob) {
+        $filter->add_violation('medial ellipsis should be surrounded on each side by a normal space or a non-break-space in bracket notation or character form');
     }
 
     # 3. reconstruct the valid ones
@@ -150,11 +172,25 @@ We want an ellipsis character instead of 3 periods (or 2 periods, 4 or 5 periods
 
 These will be turned into an ellipsis character.
 
-=item multiple invalid initial, medial, or final ellipsis
+=item initial ellipisis needs to be preceded by a normal space
 
-You have an ellipsis character that does not meet the rules.
+The string is modified with a corrected version.
 
-The string is not modified in this case, you'll need to manualy inspect it for specific problems.
+=item initial ellipsis needs to be followed by a normal space or a non-break-space in bracket notation or character form
+
+The string is modified with a corrected version.
+
+=item final ellipsis needs to be preceded by a normal space or a non-break-space in bracket notation or character form
+
+The string is modified with a corrected version.
+
+=item final ellipsis should not be followed by anything
+
+The string is modified with a corrected version.
+
+=item medial ellipsis should be surrounded on each side by a normal space or a non-break-space in bracket notation or character form
+
+The string is modified with a corrected version.
 
 =back 
 

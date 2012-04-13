@@ -22,7 +22,7 @@ sub init_mock_locales {
         next unless $loc_tag =~ m/^i_/ || Locales->new($loc_tag);
 
         $cnt++;
-        eval "package Locale::Maketext::Utils::Mock::$loc_tag;use base 'Locale::Maketext::Utils::Mock';our %Lexicon;package Locale::Maketext::Utils::Mock;";
+        eval "package Locale::Maketext::Utils::Mock::$loc_tag;use base 'Locale::Maketext::Utils::Mock';our \%Lexicon;package Locale::Maketext::Utils::Mock;";
         if ($@) {
             $cnt--;
             require Carp;

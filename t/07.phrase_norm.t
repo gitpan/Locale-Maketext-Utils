@@ -105,16 +105,16 @@ run_32_tests(
 run_32_tests(
     'filter_name'    => 'Grapheme',
     'filter_pos'     => 2,
-    'original'       => 'X \xe2\x98\xba\xe2\x80\xa6® …',                             # not interpolated on purpose, we're looking at literal strings e.g. parsing this source code maketext("X \xe2\x98\xba\xe2\x80\xa6®") to find the string 'X \xe2\x98\xba\xe2\x80\xa6®' not 'X ☺…®'
-    'modified'       => 'X [comment,grapheme “\xe2\x98\xba\xe2\x80\xa6”]® …',    # not interpolated on purpose, we're looking at literal strings …
+    'original'       => 'X \xe2\x98\xba\xe2\x80\xa6®.',                             # not interpolated on purpose, we're looking at literal strings e.g. parsing this source code maketext("X \xe2\x98\xba\xe2\x80\xa6®") to find the string 'X \xe2\x98\xba\xe2\x80\xa6®' not 'X ☺…®'
+    'modified'       => 'X [comment,grapheme “\xe2\x98\xba\xe2\x80\xa6”]®.',    # not interpolated on purpose, we're looking at literal strings …
     'all_violations' => {
         'special' => [
             'Contains grapheme notation',
         ],
-        'default' => undef,                                                             # undef means "same as special"
+        'default' => undef,                                                          # undef means "same as special"
     },
     'all_warnings'      => \%global_all_warnings,
-    'filter_violations' => undef,                                                       # undef means "same as all_violations"
+    'filter_violations' => undef,                                                    # undef means "same as all_violations"
     'filter_warnings'   => \%global_filter_warnings,
     'return_value'      => {
         'special' => [ 0, 1,                             0, 1 ],
@@ -200,29 +200,35 @@ run_32_tests(
 
     run_32_tests(
         'filter_name'    => 'Ellipsis',
-        'filter_pos'     => 4,                                                                    # is 5 with no args to new()
-        'original'       => " … I… am .. bad ,,, you e.g., you?",
-        'modified'       => " … I[comment, invalid ellipsis] am … bad … you e.g., you?",
+        'filter_pos'     => 4,                                                                                                                      # is 5 with no args to new()
+        'original'       => " …I… am .. bad ,,, you …e.g., foo … bar[output,nbsp]…[output,nbsp]baz … what…you…[output,nbsp]",
+        'modified'       => " … I … am … bad … you … e.g., foo … bar[output,nbsp]…[output,nbsp]baz … what … you …",
         'all_violations' => {
             'special' => [
                 'multiple period/comma instead of ellipsis character',
                 'initial ellipisis needs to be preceded by a normal space',
-                'invalid initial, medial, or final ellipsis',
+                'initial ellipsis needs to be followed by a normal space or a non-break-space in bracket notation or character form',
+                'final ellipsis should not be followed by anything',
+                'final ellipsis needs to be preceded by a normal space or a non-break-space in bracket notation or character form',
+                'medial ellipsis should be surrounded on each side by a normal space or a non-break-space in bracket notation or character form',
             ],
-            'default' => undef,                                                                   # undef means "same as special"
+            'default' => undef,                                                                                                                     # undef means "same as special"
         },
         'all_warnings'      => \%global_all_warnings,
         'filter_violations' => {
             'special' => [
                 'multiple period/comma instead of ellipsis character',
                 'initial ellipisis needs to be preceded by a normal space',
-                'invalid initial, medial, or final ellipsis',
+                'initial ellipsis needs to be followed by a normal space or a non-break-space in bracket notation or character form',
+                'final ellipsis should not be followed by anything',
+                'final ellipsis needs to be preceded by a normal space or a non-break-space in bracket notation or character form',
+                'medial ellipsis should be surrounded on each side by a normal space or a non-break-space in bracket notation or character form',
             ],
-            'default' => undef,                                                                   # undef means "same as special"
+            'default' => undef,                                                                                                                     # undef means "same as special"
         },    # undef means "same as all_violations"
         'filter_warnings' => \%global_filter_warnings,
         'return_value'    => {
-            'special' => [ 0, 3,                             0, 1 ],
+            'special' => [ 0, 6,                             0, 1 ],
             'default' => undef, # undef means "same as special"
         },
         'diag' => 0,
