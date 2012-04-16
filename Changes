@@ -1,5 +1,8 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.30  Mon Apr 16 10:43:23 2012
+    - rt 76601: 'Has one check that falls under "extra filters" currently.' should be under 'Consider' not 'Compiles'
+
 0.29  Fri Apr 13 14:11:56 2012
     - rt 76507: Make “multiple invalid initial, medial, or final ellipsis” modifications more useful
 

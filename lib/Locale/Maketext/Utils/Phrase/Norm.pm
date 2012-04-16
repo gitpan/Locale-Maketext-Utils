@@ -587,13 +587,13 @@ Falls under L</extra filters> currently.
 
 =item L<Consider|Locale::Maketext::Utils::Phrase::Norm::Consider>
 
+Has one check that falls under L</extra filters> currently.
+
 =item L<Escapes|Locale::Maketext::Utils::Phrase::Norm::Escapes>
 
 Falls under L</extra filters> currently.
 
 =item L<Compiles|Locale::Maketext::Utils::Phrase::Norm::Compiles>
-
-Has one check that falls under L</extra filters> currently.
 
 =back
 
