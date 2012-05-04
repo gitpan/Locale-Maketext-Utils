@@ -136,7 +136,7 @@ So lets keep it simple.
 
 Can be added later if necessary.
 
-=item *We are unlikely to be implying a continuing thought:
+=item * We are unlikely to be implying a continuing thought:
 
    What can you do, you know how he is ….
 

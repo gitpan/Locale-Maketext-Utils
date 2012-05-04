@@ -562,17 +562,15 @@ This method allows you to specify various output types. Those types allows a key
 
 Each output method name is the second argument to output. e.g. if the output method is 'xyz' you'd use it like this [output,xyz,…] and define a new one like this 'sub output_xyz { … }'.
 
-All output() methods support embedded methods: sub(), sup(), chr(), and numf().
-
-Note: sub(), sup(), and numf() are simplified in that they only work with one argument.
-
-=over 4 
+All output() methods support embedded methods: sub(), sup(), chr(), and numf(). Note: sub(), sup(), and numf() are simplified in that they only work with one argument.
 
 These default bare bones methods support 3 contexts: HTML, ANSI, and plain text. See L</output() context> below.
 
 Feel free to over ride them if they do not suit your needs.
 
 The terminal control codes were ripped from L<Term::ANSIColor> but the module itself is not used.
+
+=over 4 
 
 =item * underline()
 
@@ -618,7 +616,7 @@ In its simplest form you pass it a URL and the text:
 
    'Visit [output,url,_1,CPAN] today.', 'http://search.cpan.org'
 
-in HTML context you get: Visit <a href="http://search.cpan.org">CPAN</a> today.
+in HTML context you get: Visit E<lt>a href="http://search.cpan.org"E<gt>CPANE<lt>/aE<gt> today.
 
 in non-HTML context you get: Visit CPAN (http://search.cpan.org) today.
 

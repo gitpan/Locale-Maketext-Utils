@@ -32,7 +32,7 @@ is( Locale::Maketext::Utils::Mock->init_mock_locales(), 0, 'init_mock_locales() 
 # create_method()
 my %type = (
     'non-code' => undef(),
-    'code'     =>,
+    'code'     => 1,
 );
 for my $type ( sort keys %type ) {
     my $string = defined $type{$type} ? 'Custom' : 'I am';

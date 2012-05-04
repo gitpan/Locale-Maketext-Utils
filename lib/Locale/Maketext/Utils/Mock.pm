@@ -102,8 +102,6 @@ It returns the number of subclasses successfully created.
 
 init_mock_locales() carp()s if there was a problem createing the subclass.
 
-=back
-
 =head1 CONFIGURATION AND ENVIRONMENT
   
 Locale::Maketext::Utils::Mock requires no configuration files or environment variables.

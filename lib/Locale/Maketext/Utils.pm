@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.30';
+$Locale::Maketext::Utils::VERSION = '0.31';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -17,6 +17,8 @@ my %singleton_stash = ();
 # This is necessary to support embedded arguments (e.g. '... [output,foo,bar _1 baz] ...') and not interpolate things in the arguments that look like embedded args (e.g. argument #1 is '_2')
 sub _compile {
     my ( $lh, $string, @args ) = @_;
+    $string =~ s/_TILDE_/~~/g;    # this helps make parsing easier (via code or visually)
+
     my $compiled = $lh->SUPER::_compile($string);
     return $compiled if ref($compiled) ne 'CODE';
 
@@ -872,7 +874,7 @@ sub datetime {
         }
     }
 
-    return $dt->format_cldr( $format || $dt->{'locale'}->date_format_long() );
+    return $dt->format_cldr( $dt->{'locale'}->format_for($format) || $format || $dt->{'locale'}->date_format_long() );
 }
 
 # undocumented for now, if they get approved:

@@ -446,89 +446,95 @@ run_32_tests(
     'diag'                   => 0,
 );
 
-run_32_tests(
-    'filter_name'    => 'Compiles',
-    'filter_pos'     => 10,
-    'original'       => 'Hello [_1',
-    'modified'       => '[comment,Bracket Notation Error: Unterminated bracket group, in: Hello ~[_1]',
-    'all_violations' => {
-        'special' => [
-            'Bracket Notation Error',
-        ],
-        'default' => undef,
-    },
-    'all_warnings' => {
-        'default' => [],
-        'special' => undef,
-    },
-    'filter_violations' => {
-        'special' => [
-            'Bracket Notation Error',
-        ],
-    },
-    'filter_warnings' => {},    # undef means "same as all_warnings"
-    'return_value'    => {
-        'special' => [ 0, 1,                             0, 1 ],
-        'default' => undef, # undef means "same as special"
-    },
-    'diag' => 0,
-);
+{
 
-run_32_tests(
-    'filter_name'    => 'Compiles',
-    'filter_pos'     => 10,
-    'original'       => 'Hello _1]',
-    'modified'       => '[comment,Bracket Notation Error: Unbalanced \'~]\', in: Hello _1~]]',
-    'all_violations' => {
-        'special' => [
-            'Bracket Notation Error',
-        ],
-        'default' => undef,
-    },
-    'all_warnings' => {
-        'default' => [],
-        'special' => undef,
-    },
-    'filter_violations' => {
-        'special' => [
-            'Bracket Notation Error',
-        ],
-    },
-    'filter_warnings' => {},    # undef means "same as all_warnings"
-    'return_value'    => {
-        'special' => [ 0, 1,                             0, 1 ],
-        'default' => undef, # undef means "same as special"
-    },
-    'diag' => 0,
-);
+    # Consider parser throws syntax error
+    local $norm = Locale::Maketext::Utils::Phrase::Norm->new( qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellipsis BeginUpper EndPunc Escapes Compiles), { 'skip_defaults_when_given_filters' => 1 } );
 
-run_32_tests(
-    'filter_name'    => 'Compiles',
-    'filter_pos'     => 10,
-    'original'       => 'Hello [i_do_not_exist]',
-    'modified'       => '[comment,Bracket Notation Error: “Locale::Maketext::Utils::Mock::en” does not have a method “i_do_not_exist” in: Hello ~[i_do_not_exist~]]',
-    'all_violations' => {
-        'special' => [
-            'Bracket Notation Error',
-        ],
-        'default' => undef,
-    },
-    'all_warnings' => {
-        'default' => [],
-        'special' => undef,
-    },
-    'filter_violations' => {
-        'special' => [
-            'Bracket Notation Error',
-        ],
-    },
-    'filter_warnings' => {},    # undef means "same as all_warnings"
-    'return_value'    => {
-        'special' => [ 0, 1,                             0, 1 ],
-        'default' => undef, # undef means "same as special"
-    },
-    'diag' => 0,
-);
+    run_32_tests(
+        'filter_name'    => 'Compiles',
+        'filter_pos'     => 9,                                                                                # would be 10 if not special
+        'original'       => 'Hello [_1',
+        'modified'       => '[comment,Bracket Notation Error: Unterminated bracket group, in: Hello ~[_1]',
+        'all_violations' => {
+            'special' => [
+                'Bracket Notation Error',
+            ],
+            'default' => undef,
+        },
+        'all_warnings' => {
+            'default' => [],
+            'special' => undef,
+        },
+        'filter_violations' => {
+            'special' => [
+                'Bracket Notation Error',
+            ],
+        },
+        'filter_warnings' => {},    # undef means "same as all_warnings"
+        'return_value'    => {
+            'special' => [ 0, 1,                             0, 1 ],
+            'default' => undef, # undef means "same as special"
+        },
+        'diag' => 0,
+    );
+
+    run_32_tests(
+        'filter_name'    => 'Compiles',
+        'filter_pos'     => 9,                                                                       # would be 10 if not special
+        'original'       => 'Hello _1]',
+        'modified'       => '[comment,Bracket Notation Error: Unbalanced \'~]\', in: Hello _1~]]',
+        'all_violations' => {
+            'special' => [
+                'Bracket Notation Error',
+            ],
+            'default' => undef,
+        },
+        'all_warnings' => {
+            'default' => [],
+            'special' => undef,
+        },
+        'filter_violations' => {
+            'special' => [
+                'Bracket Notation Error',
+            ],
+        },
+        'filter_warnings' => {},    # undef means "same as all_warnings"
+        'return_value'    => {
+            'special' => [ 0, 1,                             0, 1 ],
+            'default' => undef, # undef means "same as special"
+        },
+        'diag' => 0,
+    );
+
+    run_32_tests(
+        'filter_name'    => 'Compiles',
+        'filter_pos'     => 9,                                                                                                                                                      # would be 10 if not special
+        'original'       => 'Hello [i_do_not_exist]',
+        'modified'       => '[comment,Bracket Notation Error: “Locale::Maketext::Utils::Mock::en” does not have a method “i_do_not_exist” in: Hello ~[i_do_not_exist~]]',
+        'all_violations' => {
+            'special' => [
+                'Bracket Notation Error',
+            ],
+            'default' => undef,
+        },
+        'all_warnings' => {
+            'default' => [],
+            'special' => undef,
+        },
+        'filter_violations' => {
+            'special' => [
+                'Bracket Notation Error',
+            ],
+        },
+        'filter_warnings' => {},    # undef means "same as all_warnings"
+        'return_value'    => {
+            'special' => [ 0, 1,                             0, 1 ],
+            'default' => undef, # undef means "same as special"
+        },
+        'diag' => 0,
+    );
+}
 
 # existing BN method
 my $comp_filt = Locale::Maketext::Utils::Phrase::Norm->new( 'Compiles', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );

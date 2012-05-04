@@ -2,59 +2,45 @@ package Locale::Maketext::Utils::Phrase::Norm::Consider;
 
 use strict;
 use warnings;
+use Locale::Maketext::Utils::Phrase ();
 
 sub normalize_maketext_string {
     my ($filter) = @_;
 
     my $string_sr = $filter->get_string_sr();
 
-    my $closing_bn = qr/(?<!\~)\]/;
-    my $opening_bn = qr/(?<!\~)\[/;
-
-    my $bn_var = qr/\_(?:\-?[0-9]+|\*)/;    # should we add (?<!\~) ?
+    my $struct = Locale::Maketext::Utils::Phrase::phrase2struct( ${$string_sr} );
 
     # entires phrase is bracket notation
-    if ( ${$string_sr} =~ m/^\[(.*)\]$/ ) {
-        my $contents = $1;
-        if ( $contents !~ m/$closing_bn/ && $contents !~ m/$opening_bn/ ) {
-            ${$string_sr} .= "[comment,does this phrase really need to be entirely bracket notation?]";
-            $filter->add_warning('Entire phrase is bracket notation, is there a better way in this case?');
-        }
+    if ( Locale::Maketext::Utils::Phrase::struct_is_entirely_bracket_notation($struct) ) {
+        ${$string_sr} .= "[comment,does this phrase really need to be entirely bracket notation?]";
+        $filter->add_warning('Entire phrase is bracket notation, is there a better way in this case?');
     }
 
-    my $idx = 0;
-    my @bn;
+    my $idx          = -1;
+    my $has_bare     = 0;
+    my $has_hardurl  = 0;
+    my $last_idx     = @{$struct} - 1;
+    my $bn_var_rexep = Locale::Maketext::Utils::Phrase::get_bn_var_regexp();
 
-    while ( ${$string_sr} =~ m/\[.*?\]/g ) {    # TODO: make this regex/logic smarter since it will not work with ~[ but why would we do that right :) - may need to wait for phrase-as-class obj
-        push @bn, [ $`, $&, $', $idx++ ];
+    for my $piece ( @{$struct} ) {
+        $idx++;
+        next if !ref($piece);
 
-        # rt 75979: /p breaks perl before 5.10 so we can not do the less expensive/invasive:
-        #    push @bn, [ ${^PREMATCH}, ${^MATCH}, ${^POSTMATCH}, $idx++ ];
-        # if ($] >= 5.010) won't help because:
-        #    1. the /p will still cause a syntax error
-        #    2. if we addressed #1 by eval()ing the /p then we'd still have the compiler expense since  $`, $&, $' are still in the code (which there is no way around AFAIK)
-        # ? TODO: create @bn without the need for the match variables ? patches welcome!
-    }
-
-    my $has_bare    = 0;
-    my $has_hardurl = 0;
-    for my $bn_ar (@bn) {
-        my ( $before, $bn, $after, $array_index ) = @{$bn_ar};
+        my $before = $idx == 0 ? undef() : $struct->[ $idx - 1 ];
+        my $bn     = $piece->{'orig'};
+        my $after  = $idx == $last_idx ? undef() : $struct->[ $idx + 1 ];
 
         if ( $filter->run_extra_filters() ) {
+            if ( $piece->{'type'} eq 'var' || $piece->{'type'} eq 'basic_var' ) {
 
-            # bare variable:
-            #   Simple: [_1]
-            #   TODO: Complex: [output,strong,_1] (but not [numf,_1] or [output,url,_1…]), - may need to wait for phrase-as-class obj
-            if ( $bn =~ m/^\[($bn_var)\]$/ ) {    # TODO: && “Complex” capture here
-
-                # unless the bare bracket notation  …
+                # unless the “bare” bracket notation  …
                 unless (
-                    ( $array_index == $#bn && $before =~ m/\:(?:\x20|\xc2\xa0)/ && ( !defined $after || $after eq '' ) )    # … is a trailing '…: [_2]'
+                    ( $idx == $last_idx && $before =~ m/\:(?:\x20|\xc2\xa0)/ && ( !defined $after || $after eq '' ) )    # … is a trailing '…: [_2]'
                     or
-                    ( $before !~ m/(?:\x20|\xc2\xa0)$/ && $after !~ m/^(?:\x20|\xc2\xa0)/ )                                 # … is surrounded by non-whitespace already
+                    ( $before !~ m/(?:\x20|\xc2\xa0)$/ && $after !~ m/^(?:\x20|\xc2\xa0)/ )                              # … is surrounded by non-whitespace already
                     or
-                    ( $before =~ m/,(?:\x20|\xc2\xa0)$/ && $after =~ m/^,/ )                                                # … is in a comma reference
+                    ( $before =~ m/,(?:\x20|\xc2\xa0)$/ && $after =~ m/^,/ )                                             # … is in a comma reference
                   ) {
                     ${$string_sr} =~ s/(\Q$bn\E)/“$1”/;
                     $has_bare++;
@@ -63,15 +49,18 @@ sub normalize_maketext_string {
         }
 
         # Do not hardcode URL in [output,url]:
-        if ( $bn =~ m/^\[output,url,([^\,]*)(,.*|)\]$/ ) {                                                                  # will not match a URL w/ escaped comma (i.e. ~,) but then that'd be wrong anyway so we should be good
-            my $url  = $1;
-            my $args = $2;
-            if ( $url !~ m/^($bn_var)$/ ) {
+        if ( $piece->{'list'}[0] eq 'output' && $piece->{'list'}[1] eq 'url' ) {
+            if ( $piece->{'list'}[2] !~ m/\A$bn_var_rexep\z/ ) {
+                my $last_idx_bn = @{ $piece->{'list'} } - 1;
+                my $url         = $piece->{'list'}[2];
+                my $args        = @{ $piece->{'list'} } > 3 ? ',' . join( ',', @{ $piece->{'list'} }[ 3 .. $last_idx_bn ] ) : '';
+
                 ${$string_sr} =~ s/(\Q$bn\E)/\[output,url,why hardcode “$url”$args\]/;
                 $has_hardurl++;
             }
         }
     }
+
     $filter->add_warning('Hard coded URLs can be a maintenance nightmare, why not pass the URL in so the phrase does not change if the URL does') if $has_hardurl;
     $filter->add_warning('Bare variable can lead to ambiguous output')                                                                            if $has_bare;
 

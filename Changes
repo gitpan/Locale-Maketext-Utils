@@ -1,5 +1,14 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.31  Thu Apr 26 15:57:43 2012
+    - rt 76607: POD typo
+    - rt 76778: Support format_for() in datetime()
+    - Add initial Locale::Maketext::Utils::Phrase phrase-object-precursor functions
+        - t/*.phrase_object_precursor_functions.t
+    - Use those functions to improve the Consider filter (t/07.phrase_norm.t && t/08.cpanel_norm.t still pass)
+    - Added overlooked t/pod.t
+    - Added _TILDE_ placeholder.
+
 0.30  Mon Apr 16 10:43:23 2012
     - rt 76601: 'Has one check that falls under "extra filters" currently.' should be under 'Consider' not 'Compiles'
 

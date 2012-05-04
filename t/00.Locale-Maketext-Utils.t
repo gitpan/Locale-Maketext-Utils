@@ -1,4 +1,4 @@
-use Test::More tests => 108;
+use Test::More tests => 109;
 
 BEGIN {
     unshift @INC, qw(lib ../lib);
@@ -327,6 +327,10 @@ delete $en->{'_get_key_from_lookup'};    #  don't this anymore
 ok( $en->maketext('[datetime]') =~ m{ \A \w+ \s \d+ [,] \s \d+ \z }xms, 'undef 1st undef 2nd' );
 ok( $en->maketext('[datetime,,YYYY]') =~ m{\d}, 'datetime() first arg empty string' );
 is( $en->maketext('[datetime,,YYYY]'), $en->maketext('[current_year]'), 'current_year()' );
+
+# perl -MDateTime -E 'say DateTime::Locale->load("en")->format_for("yMMMM");'
+# 'yMMMM' is a format_for() value
+is( $en->maketext('[datetime,,yMMMM]'), $en->maketext('[datetime,,MMMM y]'), 'format_for() patterns work' );
 
 my $dt_obj = DateTime->new( 'year' => 1978 );    # DateTime already brought in by prev [datetime] call
 

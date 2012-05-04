@@ -493,8 +493,8 @@ If you did not specify an argument a L<Locale::Maketext::Utils::Mock> object is 
 
 Returns a boolean value of if we are running extra filters or not.
 
-    if ($filter->run_extra_filters()) {
-        # do extar check for violations/warnings here
+    if ( $filter->run_extra_filters() ) {
+        # do extra check for violations/warnings here
     }
 
 You can use this to check if the filter should run certain tests or not. You can even skip an entire filter by use of L<return_value_noop()>.
