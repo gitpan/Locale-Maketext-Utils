@@ -447,6 +447,37 @@ like( $en->format_bytes(2796553), qr/2.\d{2} MB/, 'format_bytes() not bytes def
 like( $en->format_bytes( 1023.12345, 3 ), qr/1,023.\d{3}\xC2\xA0bytes/, 'format_bytes() bytes arg max decimal' );
 like( $en->format_bytes( 2796553, 3 ), qr/2.\d{3} MB/, 'format_bytes() bytes arg max decimal' );
 
+# __WS
+# my %ws_spiff = (
+#     "Multiple\nLine\n\tformatted\nstring" => {
+#         'name'   => 'multiline',
+#         'expect' => 'Multiple Line formatted string',
+#     },
+#     '  Leading WS' => {
+#         'name'   => 'leading WS',
+#         'expect' => 'Leading WS',
+#     },
+#     "Trailing WS \n" => {
+#         'name'   => 'trailing WS',
+#         'expect' => 'Trailing WS',
+#     },
+#     "Multiple   \n\t  Internal" => {
+#         'name'   => 'internal WS',
+#         'expect' => 'Multiple Internal',
+#     },
+#     " All    three   \n\t  types   and multple times\n" => {
+#         'name'   => 'multipe types/occurances',
+#         'expect' => 'All three types and multple times',
+#     },
+#     "… leading ellipsis" => {
+#         'name'   => 'leafing ellipsis',
+#         'expect' => ' … leading ellipsis',
+#     }
+# );
+# for my $ws ( sort keys %ws_spiff ) {
+#     is( Locale::Maketext::Utils::__WS($ws), $ws_spiff{$ws}{'expect'}, "__WS: $ws_spiff{$ws}{'name'}" );
+# }
+
 # cleanup
 unlink "$dir/TestApp/Localize/it.pm";
 rmdir "$dir/TestApp/Localize";

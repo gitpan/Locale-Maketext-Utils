@@ -127,12 +127,12 @@ run_32_tests(
     'filter_name'    => 'Ampersand',
     'filter_pos'     => 3,
     'original'       => 'Z &[output,chr,&] X[asis,ATchr(&)T®]Y Z[output,chr,38]Z?',
-    'modified'       => 'Z [output,chr,38] [output,chr,38] X[asis,ATchr(38)T®]Y Z [output,chr,38] Z?',
+    'modified'       => 'Z [output,amp] [output,amp] X[asis,ATchr(38)T®]Y Z [output,amp] Z?',
     'all_violations' => {
         'special' => [
-            'Prefer [output,chr,38] over [output,chr,&].',
+            'Prefer [output,amp] over [output,chr,&] or [output,chr,38].',
             'Prefer chr(38) over chr(&).',
-            'Ampersands need done via [output,chr,38].',
+            'Ampersands need done via [output,amp].',
             'Ampersand should have one space before and/or after unless it is embedded in an asis().',
         ],
         'default' => undef,    # undef means "same as special"
@@ -151,7 +151,7 @@ run_32_tests(
     'filter_name'    => 'Markup',
     'filter_pos'     => 4,
     'original'       => q{Z<'""'><>!},
-    'modified'       => 'Z[output,chr,60][output,chr,39][output,chr,34][output,chr,34][output,chr,39][output,chr,62][output,chr,60][output,chr,62]!',
+    'modified'       => 'Z[output,lt][output,apos][output,quot][output,quot][output,apos][output,gt][output,lt][output,gt]!',
     'all_violations' => {
         'special' => [
             'Contains markup related characters',
@@ -556,7 +556,7 @@ my $esc_filt_res = $esc_filt->normalize('I am \x{263A}.');
 is( $esc_filt_res->get_aggregate_result(), 'I am \x{263A}.', 'Escapes–leaves \x alone.' );
 
 my $norm_res = $norm->normalize('I have escaped \\" do you?');
-is( $norm_res->get_aggregate_result(), 'I have escaped [comment,escaped sequence “~[output,chr,34~]”] do you?', 'Escapes–detects and BN escapes previosuly aggregated escaped markup characters.' );
+is( $norm_res->get_aggregate_result(), 'I have escaped [comment,escaped sequence “~[output,quot~]”] do you?', 'Escapes–detects and BN escapes previosuly aggregated escaped markup characters.' );
 
 # No violations or warnings
 my $valid = $norm->normalize('Hello World');

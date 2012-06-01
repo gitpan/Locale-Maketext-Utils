@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.31';
+$Locale::Maketext::Utils::VERSION = '0.32';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -133,9 +133,11 @@ sub init {
 
 # sub __WS {
 #     my ($string) = @_;
-#     $string =~ s/\A(?:\s+|\xc2\xa0)+//xms;      # remove leading white space
-#     $string =~ s/(?:\s+|\xc2\xa0){2,}/ /xms;    # collapse multiple internal white space
-#     $string =~ s/(?:\s+|\xc2\xa0)+\z//xms;      # remove trailing white space
+#
+#     $string =~ s/\s+/ /g;
+#     $string =~ s/\A(?:\x20|\xc2\xa0)+//g;      # remove leading white space
+#     $string =~ s/(?:\x20|\xc2\xa0){2,}/ /g;    # collapse multiple internal white space
+#     $string =~ s/(?:\x20|\xc2\xa0)+\z//g;      # remove trailing white space
 #     if ( substr( $string, 0, 3 ) eq "\xE2\x80\xA6" ) {
 #         $string = " $string";
 #     }
@@ -877,16 +879,13 @@ sub datetime {
     return $dt->format_cldr( $dt->{'locale'}->format_for($format) || $format || $dt->{'locale'}->date_format_long() );
 }
 
-# undocumented for now, if they get approved:
-#   - add POD
-#   - add tests
-#   - incorporate this into phrase checker classes Locale::Maketext::Utils::Phrase::Norm::Ampersand and Locale::Maketext::Utils::Phrase::Norm::Markup
-#   - update best practice docs
-# sub output_amp  { return $_[0]->output_chr(38) }
-# sub output_lt   { return $_[0]->output_chr(60) }
-# sub output_gt   { return $_[0]->output_chr(62) }
-# sub output_apos { return $_[0]->output_chr(39) }
-# sub output_quot { return $_[0]->output_chr(34) }
+# TODO: ? make these embeddable like chr() ?
+sub output_amp  { return $_[0]->output_chr(38) }
+sub output_lt   { return $_[0]->output_chr(60) }
+sub output_gt   { return $_[0]->output_chr(62) }
+sub output_apos { return $_[0]->output_chr(39) }
+sub output_quot { return $_[0]->output_chr(34) }
+sub output_shy  { return $_[0]->output_chr(173) }
 
 # sub output_codepoint {
 #     my $cp = $_[1];

@@ -784,6 +784,30 @@ Helps to visually indicate you intend a non breaking space when it is required.
 
    'foo[output,nbsp]bar' vs 'foo bar'
 
+=item * amp()
+
+[output,amp] is a shortcut to [output,chr,38]
+
+=item * lt()
+
+[output,lt] is a shortcut to [output,chr,60]
+
+=item * gt()
+
+[output,gt] is a shortcut to [output,chr,62]
+
+=item * apos()
+
+[output,apos] is a shortcut to [output,chr,39]
+
+=item * quot()
+
+[output,quot] is a shortcut to [output,chr,34]
+
+=item * shy()
+
+[output,shy] is a shortcut to [output,chr,173]
+
 =item * asis()
 
    [output,asis,…]
@@ -1069,6 +1093,10 @@ Uses L<Tie::Hash::ReadonlyStack/del_lookup_hash()> under the hood.
 See L<Locale::Maketext::Utils::Phrase::Norm> for pragmatic examination and normalization of maketext phrase.
 
 See L<Locale::Maketext::Utils::Phrase::cPanel>for the same but via a cPanel recipe.
+
+See L<Locale::Maketext::Utils::Mock> for a mock object you can use for testing phrases.
+
+See L<Locale::Maketext::Utils::MarkPhrase> for a lightweight way to mark phrases in source code as translatable.
 
 =head1 ENVIRONMENT
 

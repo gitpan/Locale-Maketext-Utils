@@ -9,19 +9,18 @@ sub normalize_maketext_string {
     # & is handled more in depth in it's own module
     if ( $filter->get_orig_str() =~ m/[<>"']/ ) {
 
-        # normalize <>"' to [output,chr,…]
-        # TODO: [output,ENT] instead of [output,N] if it survives …
+        # normalize <>"' to [output,ENT]
 
         my $string_sr = $filter->get_string_sr();
 
-        if ( ${$string_sr} =~ s/'/[output,chr,39]/g ) {
+        if ( ${$string_sr} =~ s/'/[output,apos]/g ) {
             $filter->add_warning('consider if, instead of using a straight apostrophe, using ‘’ for single quoting and ’ for an apostrophe is the right thing here (i.e. instead of bracket notation)');
         }
-        if ( ${$string_sr} =~ s/"/[output,chr,34]/g ) {
+        if ( ${$string_sr} =~ s/"/[output,quot]/g ) {
             $filter->add_warning('consider if, instead of using straight double quotes, using “” is the right thing here (i.e. instead of bracket notation)');
         }
-        ${$string_sr} =~ s/>/[output,chr,62]/g;
-        ${$string_sr} =~ s/</[output,chr,60]/g;
+        ${$string_sr} =~ s/>/[output,gt]/g;
+        ${$string_sr} =~ s/</[output,lt]/g;
 
         $filter->add_violation('Contains markup related characters');
     }

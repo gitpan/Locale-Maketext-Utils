@@ -1,5 +1,11 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.32 Thu May 31 17:32:19 2012
+    - rt 77527: add Test::Warn as a dependency
+    - Added output() amp, lt, gt, apos, quot, shy
+    - Added L::M::U::MarkPhrase::translatable()
+        - Updated rt 77538 to look for that
+        
 0.31  Thu Apr 26 15:57:43 2012
     - rt 76607: POD typo
     - rt 76778: Support format_for() in datetime()

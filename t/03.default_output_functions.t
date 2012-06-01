@@ -1,4 +1,4 @@
-use Test::More tests => 93;
+use Test::More tests => 105;
 
 BEGIN {
     chdir 't';
@@ -32,9 +32,16 @@ is( $lh->maketext('X [output,abbr,Abbr.,Abbreviation] Y'),          "X Abbr. (Ab
 is( $lh->maketext('X [output,acronym,TLA,Three Letter Acronym] Y'), "X TLA (Three Letter Acronym) Y", 'output acronym()' );
 is( $lh->maketext( 'X [output,img,SRC,ALT _1 ALT] Y', 'ARG1' ), 'X ALT ARG1 ALT Y', 'output img()' );
 
+is( $lh->maketext('X [output,amp] Y'),  'X & Y',  'output_amp()' );
+is( $lh->maketext('X [output,lt] Y'),   'X < Y',  'output_lt()' );
+is( $lh->maketext('X [output,gt] Y'),   'X > Y',  'output_gt()' );
+is( $lh->maketext('X [output,apos] Y'), q{X ' Y}, 'output_apos()' );
+is( $lh->maketext('X [output,quot] Y'), 'X " Y',  'output_quot()' );
+
 SKIP: {
     eval 'use Encode ();';
-    skip "Could not load Encode.pm", 1 if $@;
+    skip "Could not load Encode.pm", 2 if $@;
+    is( $lh->maketext('X [output,shy] Y'),     'X ' . Encode::encode_utf8( chr(173) ) . ' Y', 'output_shy()' );
     is( $lh->maketext('X [output,chr,173] Y'), 'X ' . Encode::encode_utf8( chr(173) ) . ' Y', 'output chr() 173 (soft-hyphen)' );
 }
 
@@ -67,6 +74,13 @@ is( $lh->maketext('X [output,chr,60] Y'),  "X &lt; Y",   'output chr() 60' );
 is( $lh->maketext('X [output,chr,62] Y'),  "X &gt; Y",   'output chr() 62' );
 is( $lh->maketext('X [output,chr,42] Y'),  "X * Y",      'output chr() non-spec' );
 is( $lh->maketext('X [output,chr,173] Y'), 'X &shy; Y',  'output chr() 173 (soft-hyphen)' );
+
+is( $lh->maketext('X [output,amp] Y'),  'X &amp; Y',  'output_amp()' );
+is( $lh->maketext('X [output,lt] Y'),   'X &lt; Y',   'output_lt()' );
+is( $lh->maketext('X [output,gt] Y'),   'X &gt; Y',   'output_gt()' );
+is( $lh->maketext('X [output,apos] Y'), q{X &#39; Y}, 'output_apos()' );
+is( $lh->maketext('X [output,quot] Y'), 'X &quot; Y', 'output_quot()' );
+is( $lh->maketext('X [output,shy] Y'),  "X &shy; Y",  'output_shy()' );
 
 is( $lh->maketext( 'X [output,class,_1,daring] Y',      "jibby" ), "X <span class=\"daring\">jibby</span> Y",      'class' );
 is( $lh->maketext( 'X [output,class,_1,bold,daring] Y', "jibby" ), "X <span class=\"bold daring\">jibby</span> Y", 'multi class' );

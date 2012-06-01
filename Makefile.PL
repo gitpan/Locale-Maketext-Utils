@@ -15,6 +15,7 @@ WriteMakefile(
         'Encode' => 0,
         'Test::More' => 0,
         'Test::Carp' => 0,
+        'Test::Warn' => 0,
     },
     ($] >= 5.005 ?   
       (ABSTRACT_FROM  => 'lib/Locale/Maketext/Utils.pod', 

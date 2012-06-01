@@ -8,20 +8,19 @@ sub normalize_maketext_string {
 
     my $string_sr = $filter->get_string_sr();
 
-    # TODO: prefer && normalize to [output,amp] if it survives …
-    if ( ${$string_sr} =~ s{\[output,chr,&\]}{[output,chr,38]}g ) {
-        $filter->add_violation('Prefer [output,chr,38] over [output,chr,&].');
+    if ( ${$string_sr} =~ s{\[output,chr,(?:\&|38)\]}{[output,amp]}g ) {
+        $filter->add_violation('Prefer [output,amp] over [output,chr,&] or [output,chr,38].');
     }
     if ( ${$string_sr} =~ s{chr\(&\)}{chr\(38\)}g ) {
         $filter->add_violation('Prefer chr(38) over chr(&).');
     }
 
-    if ( ${$string_sr} =~ s{&}{[output,chr,38]}g ) {
-        $filter->add_violation('Ampersands need done via [output,chr,38].');
+    if ( ${$string_sr} =~ s{&}{[output,amp]}g ) {
+        $filter->add_violation('Ampersands need done via [output,amp].');
     }
 
-    my $aft = ${$string_sr} =~ s/\[output,chr,38\]([^ ])/[output,chr,38] $1/g;
-    my $bef = ${$string_sr} =~ s/([^ ])\[output,chr,38\]/$1 [output,chr,38]/g;
+    my $aft = ${$string_sr} =~ s/\[output,amp\]([^ ])/[output,amp] $1/g;
+    my $bef = ${$string_sr} =~ s/([^ ])\[output,amp\]/$1 [output,amp]/g;
     if ( $bef || $aft ) {
         $filter->add_violation('Ampersand should have one space before and/or after unless it is embedded in an asis().');
     }
@@ -55,7 +54,7 @@ This is not enforced anywhere since we want to assume the coder knows what they 
 
 =over 4
 
-=item Prefer [output,chr,38] over [output,chr,&].
+=item Prefer [output,amp] over [output,chr,&] or [output,chr,38].
 
 Problem should be self explanatory. The former gets replaced with the latter.
 
@@ -63,7 +62,7 @@ Problem should be self explanatory. The former gets replaced with the latter.
 
 Problem should be self explanatory. The former gets replaced with the latter.
 
-=item Ampersands need done via [output,chr,38].
+=item Ampersands need done via [output,amp].
 
 Problem should be self explanatory. The former gets replaced with the latter.
 

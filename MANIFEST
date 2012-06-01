@@ -17,6 +17,7 @@ t/11.maketext_object.t
 t/12.phrase_object_precursor_functions.t
 t/13.phrase_object_precursor_functions.t
 t/14.phrase_object_precursor_functions.t
+t/15.translatable.t
 t/pod.t
 t/lib/MyTestLocale.pm
 t/lib/MyTestLocale/es.pm
@@ -27,6 +28,8 @@ t/lib/MyTestLocale/Utils/Misc.pm
 lib/Locale/Maketext/Utils.pm
 lib/Locale/Maketext/Utils.pod
 lib/Locale/Maketext/Utils/Mock.pm
+lib/Locale/Maketext/Utils/MarkPhrase.pm
+lib/Locale/Maketext/Utils/MarkPhrase.pod
 lib/Locale/Maketext/Utils/Phrase.pm
 lib/Locale/Maketext/Utils/Phrase/Core.pm
 lib/Locale/Maketext/Utils/Phrase/cPanel.pm
