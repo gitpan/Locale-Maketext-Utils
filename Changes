@@ -1,6 +1,9 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
-0.32 Thu May 31 17:32:19 2012
+0.33  Fri Jun  1 11:12:31 2012
+    - Add 0.32 output()s to 'meth' type in Phrase.pm
+    
+0.32  Thu May 31 17:32:19 2012
     - rt 77527: add Test::Warn as a dependency
     - Added output() amp, lt, gt, apos, quot, shy
     - Added L::M::U::MarkPhrase::translatable()

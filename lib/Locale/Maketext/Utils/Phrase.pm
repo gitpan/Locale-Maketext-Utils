@@ -140,9 +140,9 @@ my %meth = (
     '#'            => 'Should be passing in an unformatted number (numf alias).',
     'format_bytes' => 'Should be passing in the unformatted number of bytes.',
     'output'       => sub {
-        return 'Should be passing in character identifier.'                                                  if $_[0]->[1] eq 'chr';
-        return 'Displayed without modification.'                                                             if $_[0]->[1] eq 'asis' || $_[0]->[1] eq 'asis_for_tests';
-        return 'No args, character.'                                                                         if $_[0]->[1] eq 'nbsp';
+        return 'Should be passing in character identifier.' if $_[0]->[1] eq 'chr';
+        return 'Displayed without modification.' if $_[0]->[1] eq 'asis' || $_[0]->[1] eq 'asis_for_tests';
+        return 'No args, character.' if $_[0]->[1] =~ m/^(?:nbsp|amp|quot|apos|shy|lt|gt)/;
         return 'Domain should be passed in. Hardcoded domain that needs translated should just be a string.' if $_[0]->[1] eq 'encode_puny' || $_[0]->[1] eq 'decode_puny';
         return;
     },
