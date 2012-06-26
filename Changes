@@ -1,5 +1,11 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.34  Mon Jun 25 20:12:28 2012
+    - rt 78036: silence uninit warnings during normalize()
+    - rt 78032: minor output,url tweaks
+    - rt 77669: typo
+    - rt 77923: translation normalization, cPanel legacy normalization (including the translation variation) 
+
 0.33  Fri Jun  1 11:12:31 2012
     - Add 0.32 output()s to 'meth' type in Phrase.pm
     

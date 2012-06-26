@@ -19,6 +19,26 @@ Locale::Maketext::Utils::Mock->create_method(
     }
 );
 
+sub new_legacy {
+    my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
+
+    $conf->{'exclude_filters'}{'Ampersand'} = 1;
+    $conf->{'exclude_filters'}{'Markup'}    = 1;
+
+    push @_, $conf;
+    goto &Locale::Maketext::Utils::Phrase::Norm::new;
+}
+
+sub new_translation_legacy {
+    my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
+
+    $conf->{'exclude_filters'}{'Ampersand'} = 1;
+    $conf->{'exclude_filters'}{'Markup'}    = 1;
+
+    push @_, $conf;
+    goto &Locale::Maketext::Utils::Phrase::Norm::new_translation;
+}
+
 # If they ever diverge we simply need to:
 #  1. Update POD
 #  2. probably update t/08.cpanel_norm.t
@@ -61,6 +81,16 @@ Exactly like L<Locale::Maketext::Utils::Phrase::Norm> except the default filters
 Currently the same as the base class’s L<Locale::Maketext::Utils::Phrase::Norm/"DEFAULT FILTERS">.
 
 If that ever changes it will be reflected here.
+
+=head2 Legacy related methods
+
+=head3 new_legacy()
+
+Just like L<base new()|Locale::Maketext::Utils::Phrase::Norm/"new()"> except it skips the markup filters since legacy values can contain HTML.
+
+=head3 new_translation_legacy()
+
+Just like L<base new_translation()|Locale::Maketext::Utils::Phrase::Norm/"new_translation()"> except it skips the markup filters since legacy values can contain HTML.
 
 =head1 AUTHOR
 

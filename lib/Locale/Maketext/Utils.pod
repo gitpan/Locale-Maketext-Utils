@@ -623,26 +623,24 @@ in non-HTML context you get: Visit CPAN (http://search.cpan.org) today.
 It is more flexible by using a special hash.
 
    'You must [output,url,_1,html,click here,plain,go to] to complete your registration.'
-   
-The arguments after the method name ('output') and the output type ('url') are: the URL, a hash of values to use in determining the string that the URL is turned into. 
 
-The main keys are 'html' and 'plain'. Their values are the string to use in conjuction with the context's rendering of the value. Embedded arguments are supported in those values:
+The arguments after the method name ('output') and the output type ('url') are: the URL, a hash of values to use in determining the string that the URL is turned into.
+
+The main keys are 'html' and 'plain' (the latter is used for both 'plain' and 'ansi' contexts). Their values are the string to use in conjuction with the context's rendering of the value. Embedded arguments are supported in those values:
 
     'You must [output,url,_1,html,click on the _2 icon,plain,go to] to complete your registration.', $URL, '<img …/>'
 
 For HTML it uses a plain anchor tag. You can specify _type => 'offsite' to the arguments and it will have 'target="_blank" class="offsite"' as attributes. Again, feel free to create your own if this does not suit your needs.
 
-   [output,url,_1,html,click here,_type,offsite,...]
+   [output,url,_1,html,click here,_type,offsite,…]
 
-For text it is left as is. If there is an %s the the value is spritnf'd into the string. Multiple %s are allowed.
+For text the URL is appended unless it had embedded args and the string contains the URL after those arguments are applied. 
 
-   'You should [output,url,plain:visit %s soon,...].'
+   'You should [output,url,plain:visit _1 soon,…].'
    
-becomes 'You should visit http://search.cpan.org soon.'
-   
-If there is no %s the the value is appended to the string by a space
+becomes 'You should visit http://search.cpan.org soon.' and 
 
-   'You should [output,url,plain:visit,...].'
+   'You should [output,url,_1,plain,visit,…].'
 
 becomes 'You should visit http://search.cpan.org.'
 
@@ -671,6 +669,8 @@ e.g. Click [output,url,_1,here] for the documentation.
 It won't look right in a terminal (e.g. Click here (http://….) for the documentation.) thus it takes away reusability.
 
 =back
+
+Supports L</"Arbitrary name/value attribute list">.
 
 =item * chr()
 

@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.33';
+$Locale::Maketext::Utils::VERSION = '0.34';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -307,7 +307,7 @@ sub text {
     require Carp;
 
     # Remember, this can fail.  Failure is controllable many ways.
-    Carp::croak 'text() requires a singlef parameter' unless @_ == 2;
+    Carp::croak 'text() requires a single parameter' unless @_ == 2;
 
     my ( $handle, $phrase ) = splice( @_, 0, 2 );
     Carp::confess('No handle/phrase') unless ( defined($handle) && defined($phrase) );
@@ -1318,27 +1318,21 @@ sub output_url {
     my ( $lh, $url, @args ) = @_;
     $url ||= '';    # carp() ?
 
-    my ( $br_mod, %output_config ) = @args % 2 ? @args : ( undef, @args );
+    my $arb_args_hr = ref $args[-1] eq 'HASH' ? pop(@args) : {};
+    my ( $url_text, %output_config ) = @args % 2 ? @args : ( undef, @args );
 
     my $return = $url;
+
     if ( !$lh->context_is_html() ) {
-        if ($br_mod) {
-            return "$br_mod ($url)";
+        if ($url_text) {
+            return "$url_text ($url)";
         }
 
         if ( exists $output_config{'plain'} ) {
+            $output_config{'plain'} ||= $url;
+            my $orig = $output_config{'plain'};
             $output_config{'plain'} = __proc_string_with_embedded_under_vars( $output_config{'plain'}, 1 );
-            if ( my @count = $output_config{'plain'} =~ m{(\%s)\b}g ) {
-                my $count = @count;
-                my @sprintf_args;
-                for ( 1 .. $count ) {
-                    push @sprintf_args, $url;
-                }
-                $return = sprintf( $output_config{'plain'}, @sprintf_args );
-            }
-            else {
-                $return = "$output_config{'plain'} $url";
-            }
+            $return = $orig ne $output_config{'plain'} && $output_config{'plain'} =~ m/\Q$url\E/ ? $output_config{'plain'} : "$output_config{'plain'} $url";
         }
     }
     else {
@@ -1346,13 +1340,16 @@ sub output_url {
             $output_config{'html'} = __proc_string_with_embedded_under_vars( $output_config{'html'}, 1 );
         }
 
-        $output_config{'html'} ||= $br_mod || $url;
+        $output_config{'html'} ||= $url_text || $url;
 
-        my $attr = '';
-        for my $name ( keys %output_config ) {
-            next if $name eq 'html' || $name eq 'plain' || $name eq '_type';
-            $attr .= qq{ $name="$output_config{$name}"};
-        }
+        my $attr = __make_attr_str_from_ar(
+            [ @args, $arb_args_hr ],
+            {
+                'html'  => 1,
+                'plain' => 1,
+                '_type' => 1,
+            }
+        );
 
         $return = exists $output_config{'_type'}
           && $output_config{'_type'} eq 'offsite' ? qq{<a$attr target="_blank" class="offsite" href="$url">$output_config{'html'}</a>} : qq{<a$attr href="$url">$output_config{'html'}</a>};

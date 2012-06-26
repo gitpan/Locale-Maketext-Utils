@@ -2,16 +2,25 @@ package Locale::Maketext::Utils::Phrase::Norm::Compiles;
 
 use strict;
 use warnings;
-use Locale::Maketext::Utils ();
+use Locale::Maketext::Utils         ();
+use Locale::Maketext::Utils::Phrase ();
 
 sub normalize_maketext_string {
     my ($filter) = @_;
 
-    my $string = $filter->get_orig_str();
-    my $mt_obj = $filter->get_maketext_object();
+    my $string    = $filter->get_orig_str();
+    my $mt_obj    = $filter->get_maketext_object();
+    my $bn_regexp = Locale::Maketext::Utils::Phrase::get_bn_var_regexp();
 
     local $SIG{'__DIE__'};    # cpanel specific: ensure a benign eval does not trigger cpsrvd's DIE handler (may be made moot by internal case 50857)
-    eval { $mt_obj->makethis($string); };
+    eval {
+
+        # TODO: when we have a phrase class we can pass in proper args to each BN method, for now pass in a bunch of numbers tpo avoid warnings
+        my $n = 0;
+        my @args = map { $n++ } ( $string =~ m/($bn_regexp)/ );
+
+        $mt_obj->makethis( $string, @args );
+    };
 
     if ($@) {
         my $error = $@;

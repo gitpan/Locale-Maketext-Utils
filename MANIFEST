@@ -18,6 +18,7 @@ t/12.phrase_object_precursor_functions.t
 t/13.phrase_object_precursor_functions.t
 t/14.phrase_object_precursor_functions.t
 t/15.translatable.t
+t/16.normalization_objects.t
 t/pod.t
 t/lib/MyTestLocale.pm
 t/lib/MyTestLocale/es.pm

@@ -16,8 +16,8 @@ is( $lh->maketext('x [output,em,y] z'),        "x \e[3my\e[0m z", 'output em tex
 
 is( $lh->maketext( 'Please [output,url,_1,plain,execute,html,click here].',                                       'CMD HERE' ), 'Please execute CMD HERE.',                                          'plain url append (cmd context)' );
 is( $lh->maketext( 'Please [output,url,_1,plain,visit,html,click here].',                                         'URL HERE' ), 'Please visit URL HERE.',                                            'plain url append (url context)' );
-is( $lh->maketext( q{Please [output,url,_1,plain,execute '%s' when you can,html,click here].},                    'CMD HERE' ), q{Please execute 'CMD HERE' when you can.},                          'plain url with placeholder' );
-is( $lh->maketext( q{Please [output,url,_1,plain,go to '%s' (again that is '%s') when you can,html,click here].}, 'URL HERE' ), q{Please go to 'URL HERE' (again that is 'URL HERE') when you can.}, 'plain url with multiple placeholders' );
+is( $lh->maketext( q{Please [output,url,_1,plain,execute '_1' when you can,html,click here].},                    'CMD HERE' ), q{Please execute 'CMD HERE' when you can.},                          'plain url with placeholder' );
+is( $lh->maketext( q{Please [output,url,_1,plain,go to '_1' (again that is '_1') when you can,html,click here].}, 'URL HERE' ), q{Please go to 'URL HERE' (again that is 'URL HERE') when you can.}, 'plain url with multiple placeholders' );
 
 is( $lh->maketext( 'My favorite site is [output,url,_1,_type,offsite].', 'http://search.cpan.org' ), 'My favorite site is http://search.cpan.org.', 'plain no value uses URL' );
 

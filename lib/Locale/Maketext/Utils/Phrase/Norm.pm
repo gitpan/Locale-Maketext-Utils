@@ -15,6 +15,19 @@ my @default_filters = qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellips
 
 # TODO ?: Acronym, IntroComma, Parens (needs CLDR char/pattern in Locales.pm) [output,chr,(not|in|the|markup|list|or any if ampt() etc happen )???
 
+sub new_translation {
+    my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
+
+    # IF YOU CHANGE THIS CHANGE THE “new_translation()” POD SECTION ALSO
+    $conf->{'exclude_filters'}{'BeginUpper'} = 1;                                                                                    # IF YOU CHANGE THIS CHANGE THE “new_translation()” POD SECTION ALSO
+    $conf->{'exclude_filters'}{'EndPunc'}    = 1;                                                                                    # IF YOU CHANGE THIS CHANGE THE “new_translation()” POD SECTION ALSO
+
+    # IF YOU CHANGE THIS CHANGE THE “new_translation()” POD SECTION ALSO
+
+    push @_, $conf;
+    goto &new;
+}
+
 sub new {
     my $ns = shift;
     $ns = ref($ns) if ref($ns);                                                                                                      # just the class ma'am
@@ -24,13 +37,18 @@ sub new {
     my @filters;
     my %cr2ns;
     my $n;                                                                                                                           # buffer
+    my @filternames;
+    
     for $n ( $conf->{'skip_defaults_when_given_filters'} ? ( @_ ? @_ : @default_filters ) : ( @default_filters, @_ ) ) {
         my $name = $n =~ m/[:']/ ? $n : __PACKAGE__ . "::$n";
+
+        next if ( exists $conf->{'exclude_filters'}{$n} && $conf->{'exclude_filters'}{$n} ) || ( exists $conf->{'exclude_filters'}{$name} && $conf->{'exclude_filters'}{$name} );
 
         if ( Module::Want::have_mod($name) ) {
             if ( my $cr = $name->can('normalize_maketext_string') ) {
                 push @filters, $cr;
                 $cr2ns{"$cr"} = $name;
+                push @filternames, $name;
             }
             else {
                 Carp::carp("$name does not implement normalize_maketext_string()");
@@ -54,6 +72,7 @@ sub new {
         'filters'           => \@filters,
         'cache'             => {},
         'filter_namespace'  => \%cr2ns,
+        'filternames'       => \@filternames,
         'run_extra_filters' => $run_extra_filters,
         'maketext_object'   => undef,
     }, $ns;
@@ -379,11 +398,23 @@ When false (default) L</extra filters> are not executed.
 
 When true the L</extra filters> are executed.
 
+=item 'exclude_filters'
+
+A hashref of filters to exclude from the object regardless of the list in effect.
+
+The key can be the long or short name space of the filter modules and the value must be true for the entry to take effect.
+
 =back
 
 =back 
 
 new() carp()s and returns false if there is some sort of failure (documented in L</"DIAGNOSTICS">).
+
+=head3 new_translation()
+
+Just like new() but uses a subset of the L</"DEFAULT FILTERS"> that apply to translations.
+
+Currently the exclusion of L<BeginUpper|Locale::Maketext::Utils::Phrase::Norm::BeginUpper> and L<EndPunc|Locale::Maketext::Utils::Phrase::Norm::EndPunc> from the L</"DEFAULT FILTERS"> is what makes up this object.
 
 =head3 normalize()
 
