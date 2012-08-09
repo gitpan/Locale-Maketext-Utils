@@ -15,30 +15,35 @@ my @default_filters = qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellips
 
 # TODO ?: Acronym, IntroComma, Parens (needs CLDR char/pattern in Locales.pm) [output,chr,(not|in|the|markup|list|or any if ampt() etc happen )???
 
-sub new_translation {
+sub new_target {
     my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
 
-    # IF YOU CHANGE THIS CHANGE THE “new_translation()” POD SECTION ALSO
-    $conf->{'exclude_filters'}{'BeginUpper'} = 1;                                                                                    # IF YOU CHANGE THIS CHANGE THE “new_translation()” POD SECTION ALSO
-    $conf->{'exclude_filters'}{'EndPunc'}    = 1;                                                                                    # IF YOU CHANGE THIS CHANGE THE “new_translation()” POD SECTION ALSO
+    # IF YOU CHANGE THIS CHANGE THE “new_target()” POD SECTION ALSO
+    $conf->{'exclude_filters'}{'BeginUpper'} = 1;                                                                                    # IF YOU CHANGE THIS CHANGE THE “new_target()” POD SECTION ALSO
+    $conf->{'exclude_filters'}{'EndPunc'}    = 1;                                                                                    # IF YOU CHANGE THIS CHANGE THE “new_target()” POD SECTION ALSO
 
-    # IF YOU CHANGE THIS CHANGE THE “new_translation()” POD SECTION ALSO
+    # IF YOU CHANGE THIS CHANGE THE “new_target()” POD SECTION ALSO
 
     push @_, $conf;
-    goto &new;
+    goto &new_source;
 }
 
 sub new {
+    Carp::carp('new() is deprecated, use new_source() instead');
+    goto &new_source;
+}
+
+sub new_source {
     my $ns = shift;
-    $ns = ref($ns) if ref($ns);                                                                                                      # just the class ma'am
+    $ns = ref($ns) if ref($ns);    # just the class ma'am
 
     my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
 
     my @filters;
     my %cr2ns;
-    my $n;                                                                                                                           # buffer
+    my $n;                         # buffer
     my @filternames;
-    
+
     for $n ( $conf->{'skip_defaults_when_given_filters'} ? ( @_ ? @_ : @default_filters ) : ( @default_filters, @_ ) ) {
         my $name = $n =~ m/[:']/ ? $n : __PACKAGE__ . "::$n";
 
@@ -137,6 +142,11 @@ sub delete_cache {
 sub normalize {
     my ( $self, $string ) = @_;
 
+    if ( !defined $string ) {
+        Carp::carp('You must pass a value to normalize()');
+        return;
+    }
+
     return $self->{'cache'}{$string} if exists $self->{'cache'}{$string};
 
     $self->{'cache'}{$string} = bless {
@@ -205,7 +215,7 @@ sub normalize {
             }
         }
 
-        last if !$filter_rc && $self->{'stop_filter_on_error'};    # TODO: document, add POD, methods, new(), tests etc.
+        last if !$filter_rc && $self->{'stop_filter_on_error'};    # TODO: document, add POD, methods, new_source(), tests etc.
     }
 
     return $self->{'cache'}{$string};
@@ -334,7 +344,7 @@ This document describes Locale::Maketext::Utils::Phrase::Norm version 0.2
 
     use Locale::Maketext::Utils::Phrase::Norm;
 
-    my $norm = Locale::Maketext::Utils::Phrase::Norm->new() || die;
+    my $norm = Locale::Maketext::Utils::Phrase::Norm->new_source() || die;
     
     my $result = $norm->normalize('This office has worked [quant,_1,day,days,zero days] without an “accident”.');
     
@@ -348,7 +358,7 @@ Analyze, report, and normalize a maketext style phrase based on rules organized 
 
 =head2 Main object
 
-=head3 new()
+=head3 new_source()
 
 Create a new object with all the filters initialized.
 
@@ -366,9 +376,9 @@ e.g. Given 'Locale::Maketext::Utils::Phrase::Norm::MyCoolFilter' you can pass th
 
 =item The last argument can be a hashref of options:
 
-    my $norm = Locale::Maketext::Utils::Phrase::Norm->new('My::Filter::XYZ'); # all default filters followed by the My::Filter::XYZ filter
+    my $norm = Locale::Maketext::Utils::Phrase::Norm->new_source('My::Filter::XYZ'); # all default filters followed by the My::Filter::XYZ filter
     
-    my $norm = Locale::Maketext::Utils::Phrase::Norm->new('My::Filter::XYZ', { 'skip_defaults_when_given_filters' => 1 }); # only do My::Filter::XYZ the filter
+    my $norm = Locale::Maketext::Utils::Phrase::Norm->new_source('My::Filter::XYZ', { 'skip_defaults_when_given_filters' => 1 }); # only do My::Filter::XYZ the filter
 
 The options are outlined below and are all optional:
 
@@ -408,11 +418,11 @@ The key can be the long or short name space of the filter modules and the value 
 
 =back 
 
-new() carp()s and returns false if there is some sort of failure (documented in L</"DIAGNOSTICS">).
+new_source() carp()s and returns false if there is some sort of failure (documented in L</"DIAGNOSTICS">).
 
-=head3 new_translation()
+=head3 new_target()
 
-Just like new() but uses a subset of the L</"DEFAULT FILTERS"> that apply to translations.
+Just like new_source() but uses a subset of the L</"DEFAULT FILTERS"> that apply to translations.
 
 Currently the exclusion of L<BeginUpper|Locale::Maketext::Utils::Phrase::Norm::BeginUpper> and L<EndPunc|Locale::Maketext::Utils::Phrase::Norm::EndPunc> from the L</"DEFAULT FILTERS"> is what makes up this object.
 
@@ -434,7 +444,7 @@ If you did not specify an argument a L<Locale::Maketext::Utils::Mock> object is 
 
 =head3 set_maketext_object() 
 
-Takes the same object you’d pass to new() via ‘maketext_object’.
+Takes the same object you’d pass to the constructor method via ‘maketext_object’.
 
 This is what will be used on subsequent calls to normalize().
 
@@ -670,11 +680,11 @@ It’s a good idea to explain the filter in it’s POD. Check out L<_Stub|Locale
 
 =item C<< %s does not implement normalize_maketext_string() >>
 
-new() was able to load the filter %s but that class does not have a normalize_maketext_string() method.
+The constructor method was able to load the filter %s but that class does not have a normalize_maketext_string() method.
 
 =item C<< Can't locate %s.pm in @INC … >>
 
-new() was not able to load the filter %s, the actual error comes from perl via $@ from L<Module::Want>
+The constructor method was not able to load the filter %s, the actual error comes from perl via $@ from L<Module::Want>
 
 =item C<< Filter list is empty! >>
 
@@ -682,11 +692,19 @@ After all initialization and no other errors the list of filters is somehow empt
 
 =item C<< Given maketext object does not have a makethis() method. >>
 
-The value of the maketext_object key you passed to new() or the value passed to set_maketext_object() does not define a makethis() method.
+The value of the maketext_object key you passed to the constructor method or the value passed to set_maketext_object() does not define a makethis() method.
 
 =item C<< Given maketext object is not a reference. >>
 
-The value of the maketext_object key you passed to new() or the value passed to set_maketext_object() is not an object.
+The value of the maketext_object key you passed to the constructor method or the value passed to set_maketext_object() is not an object.
+
+=item C<< new() is deprecated, use new_source() instead >>
+
+Your code uses the deprecated constructor and needs to be updated.
+
+=item C<< You must pass a value to normalize() >>
+
+Your code called normalize() without giving it a value to, well, normalize.
 
 =back
 

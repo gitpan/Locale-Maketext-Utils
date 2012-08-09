@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.34';
+$Locale::Maketext::Utils::VERSION = '0.35';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -131,6 +131,8 @@ sub init {
     );
 }
 
+# TODO:
+# *makevar = *maketext; and friends ...
 # sub __WS {
 #     my ($string) = @_;
 #
@@ -303,17 +305,23 @@ sub get_language_tag_character_orientation {
 }
 
 sub text {
+    require Carp;
+    Carp::carp('text() is deprecated, use lextext() instead');
+    goto &lextext;
+}
+
+sub lextext {
 
     require Carp;
 
     # Remember, this can fail.  Failure is controllable many ways.
-    Carp::croak 'text() requires a single parameter' unless @_ == 2;
+    Carp::croak 'lextext() requires a single parameter' unless @_ == 2;
 
     my ( $handle, $phrase ) = splice( @_, 0, 2 );
     Carp::confess('No handle/phrase') unless ( defined($handle) && defined($phrase) );
 
     if ( !$handle->{'use_external_lex_cache'} ) {
-        Carp::carp("text() requires you to have 'use_external_lex_cache' enabled.");
+        Carp::carp("lextext() requires you to have 'use_external_lex_cache' enabled.");
         return;
     }
 

@@ -206,7 +206,7 @@ run_32_tests(
         'all_violations' => {
             'special' => [
                 'multiple period/comma instead of ellipsis character',
-                'initial ellipisis needs to be preceded by a normal space',
+                'initial ellipsis needs to be preceded by a normal space',
                 'initial ellipsis needs to be followed by a normal space or a non-break-space in bracket notation or character form',
                 'final ellipsis should not be followed by anything',
                 'final ellipsis needs to be preceded by a normal space or a non-break-space in bracket notation or character form',
@@ -218,7 +218,7 @@ run_32_tests(
         'filter_violations' => {
             'special' => [
                 'multiple period/comma instead of ellipsis character',
-                'initial ellipisis needs to be preceded by a normal space',
+                'initial ellipsis needs to be preceded by a normal space',
                 'initial ellipsis needs to be followed by a normal space or a non-break-space in bracket notation or character form',
                 'final ellipsis should not be followed by anything',
                 'final ellipsis needs to be preceded by a normal space or a non-break-space in bracket notation or character form',

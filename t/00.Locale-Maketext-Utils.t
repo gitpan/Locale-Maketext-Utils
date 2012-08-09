@@ -1,4 +1,5 @@
-use Test::More tests => 109;
+use Test::More tests => 115;
+use Test::Warn;
 
 BEGIN {
     unshift @INC, qw(lib ../lib);
@@ -49,7 +50,7 @@ use base 'TestApp::Localize';
 our $Encoding = 'utf7';
 
 our %Lexicon = (
-    'Hello World' => 'Bonjour Monde',
+    'Hello World' => '[output,strong,Bonjour] Monde',
 );
 
 sub init {
@@ -198,42 +199,35 @@ ok( $en_US->language_tag()     eq 'en-us', 'get_handle en-US' );
 ok( $en_US->get_language_tag() eq 'en_us', 'get_language_tag()' );
 
 my $fr = TestApp::Localize->get_handle('fr');
-ok( $fr->language_tag()       eq 'fr',                'get_handle fr' );
-ok( $fr->get_base_class()     eq 'TestApp::Localize', 'get_base_class()' );
-ok( $fr->fetch('Hello World') eq 'Bonjour Monde',     'fetch() method' );
-ok( $fr->{'numf_comma'}       eq '1',                 'init set value ok' );
+{
+    local $fr->{'use_external_lex_cache'} = 1;
+
+    is( $fr->lextext('Hello World'), '[output,strong,Bonjour] Monde', 'lextext() returns the lexicon value in uncompiled form before the compiled value is cached' );
+
+    warning_is {
+        is( $fr->text('Hello World'), $fr->lextext('Hello World'), 'text() returns the same value as lextext()' );
+    }
+    'text() is deprecated, use lextext() instead', 'text() complains about being deprecated"';
+
+    ok( !exists $fr->{'_external_lex_cache'}{'Hello World'}, 'Sanity: phrase is not yet cached' );
+    $fr->maketext('Hello World');    # cache it
+    ok( exists $fr->{'_external_lex_cache'}{'Hello World'}, 'Sanity: maketext() caches compiled version' );    # make sure it is no cached
+    is( $fr->lextext('Hello World'), '[output,strong,Bonjour] Monde', 'lextext() returns the lexicon value in uncompiled form after the compiled value is cached' );
+}
+
+ok( $fr->language_tag() eq 'fr', 'get_handle fr' );
+ok( $fr->get_base_class() eq 'TestApp::Localize', 'get_base_class()' );
+is( $fr->fetch('Hello World'), '<strong>Bonjour</strong> Monde', 'fetch() method' );
+ok( $fr->{'numf_comma'} eq '1', 'init set value ok' );
 
 # safe to assume print() will work to if fetch() does...
 
 {
-    local $/ = "\n";    # just to be sure we're testing consistently...
-    ok( $fr->get('Hello World') eq "Bonjour Monde\n", 'get() method' );
+    local $/ = "\n";                                                                                           # just to be sure we're testing consistently...
+    is( $fr->get('Hello World'), "<strong>Bonjour</strong> Monde\n", 'get() method' );
 
     # safe to assume say() will work to if get() does...
 }
-
-# this was a bad bad experimental idea (which is why it was undocumented and finally removed in 0.13)
-# ## test AUTOLOAD:
-# ok($fr->fetch_p('Hello World') eq '<p>Bonjour Monde</p>', 'AUTOLOAD tag');
-# ok($fr->fetch_p_open('Hello World') eq '<p>Bonjour Monde', 'AUTOLOAD tag open');
-# ok($fr->fetch_p_close('Hello World') eq 'Bonjour Monde</p>', 'AUTOLOAD tag close');
-#
-# ok($fr->fetch_p_err('Hello World') eq '<p class="err">Bonjour Monde</p>', 'AUTOLOAD tag class');
-# ok($fr->fetch_p_err_open('Hello World') eq '<p class="err">Bonjour Monde', 'AUTOLOAD tag class open');
-# ok($fr->fetch_p_err_close('Hello World') eq 'Bonjour Monde</p>', 'AUTOLOAD tag class close');
-# ok(!$fr->mistyped_non_existant_no_args(), 'AUTOLOAD no-arg not fatal'); # what about mistyped ones that do have args, yikes...
-# SKIP: {
-#     skip "Sub::Todo required to test for 'not implemented' status", 1 if !$has_sub_todo;
-#     ok( $! > 0, 'AUTOLOAD mistyped_non_existant_no_args() + Sub::Todo sets $! with non Tie::Hash::ReadonlyStack compat Lexicon');
-#     $! = 0;
-# };
-# SKIP: {
-#     skip "Sub::Todo must not be installed to test for 'no Sub::Todo not implemented' status", 1 if $has_sub_todo;
-#     ok( $! == 0, 'AUTOLOAD mistyped_non_existant_no_args() w/ out Sub::Todo does not get $! set with non Tie::Hash::ReadonlyStack compat Lexicon');
-#     $! = 0;
-# };
-# # end AUTOLOAD tests
-
 ok( $fr->encoding()         eq 'utf7',          'class $Encoding' );
 ok( $fr->fetch('Fallback')  eq 'Fallback orig', 'fallback  behavior' );
 ok( $fr->fetch('Thank you') eq 'Thank you',     'fail_with _AUTO behavior' );

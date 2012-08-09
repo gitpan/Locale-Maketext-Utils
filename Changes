@@ -1,5 +1,12 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.35  Thu Aug  9 15:30:52 2012
+    - rt 78871 - rename normalizing object constructors
+    - rt 78748 - ellipsis typo
+    - rt 78603 - handle undef value to normalize()
+    - rt 78073 - POD typo
+    - rt 78870 - rename lexicon lookup method for less ambiguity
+    
 0.34  Mon Jun 25 20:12:28 2012
     - rt 78036: silence uninit warnings during normalize()
     - rt 78032: minor output,url tweaks

@@ -19,33 +19,33 @@ Locale::Maketext::Utils::Mock->create_method(
     }
 );
 
-sub new_legacy {
+sub new_legacy_source {
     my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
 
     $conf->{'exclude_filters'}{'Ampersand'} = 1;
     $conf->{'exclude_filters'}{'Markup'}    = 1;
 
     push @_, $conf;
-    goto &Locale::Maketext::Utils::Phrase::Norm::new;
+    goto &Locale::Maketext::Utils::Phrase::Norm::new_source;
 }
 
-sub new_translation_legacy {
+sub new_legacy_target {
     my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
 
     $conf->{'exclude_filters'}{'Ampersand'} = 1;
     $conf->{'exclude_filters'}{'Markup'}    = 1;
 
     push @_, $conf;
-    goto &Locale::Maketext::Utils::Phrase::Norm::new_translation;
+    goto &Locale::Maketext::Utils::Phrase::Norm::new_target;
 }
 
 # If they ever diverge we simply need to:
 #  1. Update POD
 #  2. probably update t/08.cpanel_norm.t
-#  3. add our own new() or list of defaults that SUPER::new would call instead of using its array or something
-# sub new {
+#  3. add our own new_source() or list of defaults that SUPER::new_source would call instead of using its array or something
+# sub new_source {
 #     …
-#     return $_[0]->SUPER::new(… @non_default_list …);
+#     return $_[0]->SUPER::new_source(… @non_default_list …);
 # }
 
 1;
@@ -66,7 +66,7 @@ This document describes Locale::Maketext::Utils::Phrase::cPanel version 0.1
 
     use Locale::Maketext::Utils::Phrase::cPanel;
 
-    my $norm = Locale::Maketext::Utils::Phrase::cPanel->new() || die;
+    my $norm = Locale::Maketext::Utils::Phrase::cPanel->new_source() || die;
     
     my $result = $norm->normalize('This office has worked [quant,_1,day,days,zero days] without an “accident”.');
     
@@ -84,13 +84,13 @@ If that ever changes it will be reflected here.
 
 =head2 Legacy related methods
 
-=head3 new_legacy()
+=head3 new_legacy_source()
 
-Just like L<base new()|Locale::Maketext::Utils::Phrase::Norm/"new()"> except it skips the markup filters since legacy values can contain HTML.
+Just like L<base new_source()|Locale::Maketext::Utils::Phrase::Norm/"new_source()"> except it skips the markup filters since legacy values can contain HTML.
 
-=head3 new_translation_legacy()
+=head3 new_legacy_target()
 
-Just like L<base new_translation()|Locale::Maketext::Utils::Phrase::Norm/"new_translation()"> except it skips the markup filters since legacy values can contain HTML.
+Just like L<base new_target()|Locale::Maketext::Utils::Phrase::Norm/"new_target()"> except it skips the markup filters since legacy values can contain HTML.
 
 =head1 AUTHOR
 

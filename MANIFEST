@@ -49,3 +49,4 @@ lib/Locale/Maketext/Utils/Phrase/Norm/Escapes.pm
 lib/Locale/Maketext/Utils/Phrase/Norm/Compiles.pm
 
 META.yml                                 Module meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

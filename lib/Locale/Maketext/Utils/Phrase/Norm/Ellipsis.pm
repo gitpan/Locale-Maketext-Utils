@@ -32,7 +32,7 @@ sub normalize_maketext_string {
     # }
 
     if ( ${$string_sr} =~ s/^(|\xc2\xa0|\[output\,nbsp\])…/ …/ ) {
-        $filter->add_violation('initial ellipisis needs to be preceded by a normal space');
+        $filter->add_violation('initial ellipsis needs to be preceded by a normal space');
     }
 
     # 1. placeholders for legit ones
@@ -172,7 +172,7 @@ We want an ellipsis character instead of 3 periods (or 2 periods, 4 or 5 periods
 
 These will be turned into an ellipsis character.
 
-=item initial ellipisis needs to be preceded by a normal space
+=item initial ellipsis needs to be preceded by a normal space
 
 The string is modified with a corrected version.
 

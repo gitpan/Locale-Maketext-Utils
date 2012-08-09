@@ -228,11 +228,15 @@ Returns the character orientation string for the object or the tag given as the 
 
 The string comes from the CLDR.
 
-=head2 $lh->text('Your key here.')
+=head2 $lh->lextext('Your key here.')
 
 Get the lexicon’s text of 'Your key here.' without compiling it (in other words all bracket notation is still in tact).
 
-The results are sutiable for the first arg to makethis().
+The results are suitable for the first arg to makethis().
+
+=head3 $lh->text('Your key here.')–deprecated
+
+Deprecated name of $lh->lextext().
 
 =head2 $lh->makethis()
 
@@ -1092,7 +1096,7 @@ Uses L<Tie::Hash::ReadonlyStack/del_lookup_hash()> under the hood.
 
 See L<Locale::Maketext::Utils::Phrase::Norm> for pragmatic examination and normalization of maketext phrase.
 
-See L<Locale::Maketext::Utils::Phrase::cPanel>for the same but via a cPanel recipe.
+See L<Locale::Maketext::Utils::Phrase::cPanel> for the same but via a cPanel recipe.
 
 See L<Locale::Maketext::Utils::Mock> for a mock object you can use for testing phrases.
 
