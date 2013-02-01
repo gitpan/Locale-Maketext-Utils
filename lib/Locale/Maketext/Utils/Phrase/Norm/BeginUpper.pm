@@ -6,14 +6,12 @@ use warnings;
 sub normalize_maketext_string {
     my ($filter) = @_;
 
-    return $filter->return_value_noop() if !$filter->run_extra_filters();
-
     my $string_sr = $filter->get_string_sr();
 
     if ( ${$string_sr} !~ m/\A(?:[A-Z]|(?:\[[^\]]+)|(?: …))/ ) {
 
         # ${$string_sr} = "[comment,beginning needs to be upper case ?]" . ${$string_sr};
-        $filter->add_violation('Does not start with an uppercase letter, ellipsis preceded by space, or bracket notation.');
+        $filter->add_warning('Does not start with an uppercase letter, ellipsis preceded by space, or bracket notation.');
     }
 
     # TODO (phrase obj?) If it starts w/ bracket notation will it be appropriately begun when rendered?
@@ -33,9 +31,21 @@ We want to make sure phrases begin correctly and consistently.
 
 =head2 Rationale
 
-Why would we want incorrect or inconsistent things?
+Correct beginning case makes the meaning clearer to end users.
+
+Clearer meaning makes it easier to make a good translation.
+
+Consistent beginning case makes it easier for developers to work with.
+
+Consistent beginning case is a sign of higher quality product.
+
+Incorrect beginning case could be a sign that partial phrases are in use or an error has been made.
 
 =head1 possible violations
+
+None
+
+=head1 possible warnings
 
 =over 4
 
@@ -44,11 +54,3 @@ Why would we want incorrect or inconsistent things?
 Problem should be self explanatory.
 
 =back
-
-=head1 possible warnings
-
-None
-
-=head1 Entire filter only runs under extra filter mode.
-
-See L<Locale::Maketext::Utils::Phrase::Norm/extra filters> for more details.

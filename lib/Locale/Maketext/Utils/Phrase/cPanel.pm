@@ -67,16 +67,16 @@ This document describes Locale::Maketext::Utils::Phrase::cPanel version 0.1
     use Locale::Maketext::Utils::Phrase::cPanel;
 
     my $norm = Locale::Maketext::Utils::Phrase::cPanel->new_source() || die;
-    
+
     my $result = $norm->normalize('This office has worked [quant,_1,day,days,zero days] without an “accident”.');
-    
+
     # process $result
 
 =head1 DESCRIPTION
 
 Exactly like L<Locale::Maketext::Utils::Phrase::Norm> except the default filters are what cPanel requires.
 
-=head1 DEFAULT cPanel RECIPE FILTERS 
+=head1 DEFAULT cPanel RECIPE FILTERS
 
 Currently the same as the base class’s L<Locale::Maketext::Utils::Phrase::Norm/"DEFAULT FILTERS">.
 
@@ -100,8 +100,8 @@ Daniel Muey  C<< <http://drmuey.com/cpan_contact.pl> >>
 
 Copyright (c) 2012 cPanel, Inc. C<< <copyright@cpanel.net>> >>. All rights reserved.
 
-This library is free software; you can redistribute it and/or modify it under 
-the same terms as Perl itself, either Perl version 5.10.1 or, at your option, 
+This library is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself, either Perl version 5.10.1 or, at your option,
 any later version of Perl 5 you may have available.
 
 =head1 DISCLAIMER OF WARRANTY

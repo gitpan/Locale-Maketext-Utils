@@ -41,16 +41,14 @@ Description here
 
 None
 
+I<Optional: For use when the entire filter only runs under extra filter mode:>
 
-=for use when the entire filter only runs under extra filter mode:
-    
     =head1 Entire filter only runs under extra filter mode.
     
     See L<Locale::Maketext::Utils::Phrase::Norm/extra filters> for more details.
 
+I<Optional: For use when one or more, but not all, checks in a filter only run under extra filter mode:>
 
-=for use when one or more, but not all, checks in a filter only run under extra filter mode:
-    
     =head1 Checks only run under extra filter mode:
     
     =over 4
@@ -62,4 +60,3 @@ None
     =back
     
     See L<Locale::Maketext::Utils::Phrase::Norm/extra filters> for more details.
-

@@ -30,20 +30,20 @@ package main;
 
 my $ok_obj = TestApp::Localize->get_handle();
 
-my $no_arg = Locale::Maketext::Utils::Phrase::Norm->new( 'Compiles', { 'skip_defaults_when_given_filters' => 1 } );
-my $good_arg = Locale::Maketext::Utils::Phrase::Norm->new( 'Compiles', { 'skip_defaults_when_given_filters' => 1, 'maketext_object' => $ok_obj } );
+my $no_arg = Locale::Maketext::Utils::Phrase::Norm->new_source( 'Compiles', { 'skip_defaults_when_given_filters' => 1 } );
+my $good_arg = Locale::Maketext::Utils::Phrase::Norm->new_source( 'Compiles', { 'skip_defaults_when_given_filters' => 1, 'maketext_object' => $ok_obj } );
 
 does_carp_that_matches(
     sub {
-        my $o = Locale::Maketext::Utils::Phrase::Norm->new( { 'maketext_object' => Locale::Maketext::Utils::Phrase::Norm->new() } );
-        ok( !$o, 'new() returns false' );
+        my $o = Locale::Maketext::Utils::Phrase::Norm->new_source( { 'maketext_object' => Locale::Maketext::Utils::Phrase::Norm->new_source() } );
+        ok( !$o, 'new_source() returns false' );
     },
     qr/Given maketext object does not have a makethis\(\) method\./,
 );
 does_carp_that_matches(
     sub {
-        my $o = Locale::Maketext::Utils::Phrase::Norm->new( { 'maketext_object' => 'not a ref' } );
-        ok( !$o, 'new() returns false' );
+        my $o = Locale::Maketext::Utils::Phrase::Norm->new_source( { 'maketext_object' => 'not a ref' } );
+        ok( !$o, 'new_source() returns false' );
     },
     qr/Given maketext object is not a reference./,
 );

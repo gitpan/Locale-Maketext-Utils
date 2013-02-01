@@ -293,7 +293,7 @@ use base 'TestApp::Localize';
 __PACKAGE__->make_alias('it_us');
 
 our %Lexicon = (
-    'Hello World' => 'Ciao Mondo',  
+    'Hello World' => 'Ciao Mondo',
 );
 
 1;

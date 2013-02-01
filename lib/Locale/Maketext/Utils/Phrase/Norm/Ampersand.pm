@@ -40,9 +40,11 @@ Do not use a raw ampersand even in output,chr. If used as text it needs to have 
 
 =head2 Rationale
 
-Since & is a markup character it must be done via output() in order to be safe.
+Same rationale as the L<Markup|Locale::Maketext::Utils::Phrase::Norm::Markup/Rationale>.
 
-If it is used as a word it should have space around for clarity.
+Since & is a markup character it must be done via output() in order to be safe in all contexts.
+
+If it is used as a word it should have a space on each side of it for clarity.
 
 =head1 IF YOU USE THIS FILTER ALSO USE …
 
@@ -70,7 +72,7 @@ Problem should be self explanatory. The former gets replaced with the latter.
 
 Problem should be self explanatory. Spaces get added as needed.
 
-=back 
+=back
 
 =head1 possible warnings
 

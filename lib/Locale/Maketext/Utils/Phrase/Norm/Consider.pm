@@ -31,20 +31,16 @@ sub normalize_maketext_string {
         my $bn     = $piece->{'orig'};
         my $after  = $idx == $last_idx ? undef() : $struct->[ $idx + 1 ];
 
-        if ( $filter->run_extra_filters() ) {
-            if ( $piece->{'type'} eq 'var' || $piece->{'type'} eq 'basic_var' ) {
+        if ( $piece->{'type'} eq 'var' || $piece->{'type'} eq 'basic_var' ) {
 
-                # unless the “bare” bracket notation  …
-                unless (
-                    ( $idx == $last_idx && $before =~ m/\:(?:\x20|\xc2\xa0)/ && ( !defined $after || $after eq '' ) )    # … is a trailing '…: [_2]'
-                    or
-                    ( $before !~ m/(?:\x20|\xc2\xa0)$/ && $after !~ m/^(?:\x20|\xc2\xa0)/ )                              # … is surrounded by non-whitespace already
-                    or
-                    ( $before =~ m/,(?:\x20|\xc2\xa0)$/ && $after =~ m/^,/ )                                             # … is in a comma reference
-                  ) {
-                    ${$string_sr} =~ s/(\Q$bn\E)/“$1”/;
-                    $has_bare++;
-                }
+            # unless the “bare” bracket notation  …
+            unless (
+                ( $idx == $last_idx && $before =~ m/\:(?:\x20|\xc2\xa0)/ && ( !defined $after || $after eq '' ) )    # … is a trailing '…: [_2]'
+                or ( $before !~ m/(?:\x20|\xc2\xa0)$/ && $after !~ m/^(?:\x20|\xc2\xa0)/ )                           # … is surrounded by non-whitespace already
+                or ( $before =~ m/,(?:\x20|\xc2\xa0)$/ && $after =~ m/^,/ )                                          # … is in a comma reference
+              ) {
+                ${$string_sr} =~ s/(\Q$bn\E)/“$1”/;
+                $has_bare++;
             }
         }
 
@@ -97,7 +93,7 @@ The idea behind it is that a phrase that is entirely bracket notation is a sure 
 
 For example:
 
-=over 4 
+=over 4
 
 =item method
 
@@ -133,7 +129,7 @@ or if you prefer to keep the variant–pair as one unit:
 =item Hard coded URLs can be a maintenance nightmare, why not pass the URL in so the phrase does not change if the URL does
 
      $lh->maketext('You can [output,url,http://support.example.com,visit our support page] for further assistance.');
-     
+
 What happens when support.example.com changes to custcare.example.com? You have to change, not only the caller but the lexicons and translations, ick!
 
 Then after you do that your boss says, oh wait actually it needs to be customer.example.com …
@@ -207,5 +203,3 @@ Depending on what you’re doing other things might work too:
 =item Bare variable can lead to ambiguous output
 
 =back
-
-See L<Locale::Maketext::Utils::Phrase::Norm/extra filters> for more details.

@@ -61,9 +61,35 @@ We only want bytes strings and not “wide” unicode code point notation.
 
 This helps give consistency, clarity, and simplicity.
 
-There's no really good way to combine the use of bytes strings and unicode string without issues. If we use bytes strings everything just works.
+=over 4
 
-You can simply use the character itself or a bracket notation method for the handful of markup related or visually special characters
+=item * Having one standard means no one has to guess/lookup what it is they are looking at or how they are expected to do it.
+
+=item * When harvesting phrases we avoid having to deal with interpolating in order to get the correct key to look up.
+
+L<Text::Extract::MaketextCallPhrases> will handle it correctly for perl notation but what if you’re not parsing perl code?
+
+=item * At run time we avoid potential key to look up problems.
+
+=item * Avoids many encoding/decoding issue complexities.
+
+=item * Using unicode code point notation adds a layer of complexity that hinders translators and thus makes room for lower quality translations.
+
+=item * In perl, there's no really good way to combine the use of bytes strings and unicode string without issues. If we use bytes strings everything just works.
+
+Of course, using unicode strings when you need to operate under character semantics is the appropriate thing to do and newer perls have really great tools for that.
+
+However, for localization we are essentially looking up and passing through without examination or collation modifications. So bytes is the way to go for phrases!
+
+=item * Many things you might want to do with a phrase require it be bytes.
+
+You get garbled data when output to browser, file, database, or terminal.
+
+Various hashing and encrypting operate on bytes (using a unicode string can be fatal or you silently get unexpected data).
+
+=back
+
+Solution: You can simply use the character itself or a bracket notation method for the handful of markup related or visually special characters
 
 =head1 possible violations
 
@@ -115,7 +141,7 @@ This means you have something like u"\uNNNN" and need to use the character itsel
 
 These will be turned into ‘[comment,non bytes unicode string “u"\uNNNN"”]’ (where NNNN is the Unicode code point) so you can find them visually.
 
-=back 
+=back
 
 =head1 possible warnings
 

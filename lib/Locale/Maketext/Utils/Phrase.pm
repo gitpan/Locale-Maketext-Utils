@@ -40,11 +40,11 @@ sub phrase2struct {
             ( # Capture chunk of …
                 # bracket notation …
                 (?:
-                    $opening_bn 
+                    $opening_bn
                         ( # Capture bracket pair contents
                             (?:
-                            \~\] 
-                            | 
+                            \~\]
+                            |
                             [^\]]
                         )*
                     )
@@ -148,8 +148,8 @@ my %meth = (
     },
     'datetime' => sub {
         return 'format has no translatable components' if !$_[0]->[2]    # there is no format (FWIW, 0 is not a valid format)
-              || $_[0]->[2] =~ m/\A(?:date|time|datetime)_format_(:full|long|medium|short|default)\z/    # it is a format method name
-              || $_[0]->[2] =~ m/\A[GgyYQqMmwWdDEeaAhHKkSszZvVuLFcj]+(?:{[0-9],?([0-9])?})?\z/;          # is only CLDR Pattern codes …
+          || $_[0]->[2] =~ m/\A(?:date|time|datetime)_format_(:full|long|medium|short|default)\z/    # it is a format method name
+          || $_[0]->[2] =~ m/\A[GgyYQqMmwWdDEeaAhHKkSszZvVuLFcj]+(?:{[0-9],?([0-9])?})?\z/;          # is only CLDR Pattern codes …
 
         # … i.e. which includes values for format_for() AKA $loc->available_formats(),
         #    http://search.cpan.org/perldoc?DateTime#CLDR_Patterns says:
@@ -272,11 +272,11 @@ This document describes Locale::Maketext::Utils::Phrase version 0.1
 =head1 SYNOPSIS
 
     use Locale::Maketext::Utils::Phrase ();
-    
+
     my $struct = Locale::Maketext::Utils::Phrase::phrase2struct(
         "So long, and thanks for [output,strong,all] the fish."
     );
-    
+
     for my $piece (@{$struct}) {
         if (!ref($piece)) {
             # this $piece is a non-bracket notation chunk
@@ -324,7 +324,7 @@ The hashref has the following keys:
 
 The value is the original bracket notation string in its entirety. e.g. '[output,strong,NOT]'
 
-=item cont 
+=item cont
 
 The value is the content of the inside of original bracket notation string. e.g. 'output,strong,NOT'
 
@@ -338,7 +338,7 @@ This is a string defining what general type of bracket notation we’re dealing 
 
 =over 4
 
-=item 'var' 
+=item 'var'
 
 The content is a variable reference (i.e. not translatable).
 
@@ -372,7 +372,7 @@ The content type could not be determined. This is not necessarily an error. It c
 
 =item '_invalid'
 
-The content type is invalid. 
+The content type is invalid.
 
 This could be something L<Locale::Maketext> would see as a syntax error (e.g. ["  ,foo"]) or something it might allow through (on purpose or by happenstance (e.g. [])) but is ambiguous for no gain.
 
@@ -415,7 +415,7 @@ In order to keep the parsing as simple/fast as possible we avoid trying to prope
 In the rare case you really need a literal ~ to precede a comma, ~, [, or ] (really, anywhere in the string) just use the explicit placeholder string “_TILDE_”.
 
     $lh->maketext('A tilde is this: _TILDE_, you like?');
-    
+
     $lh->maketext('A tilde [output,strong,is this: _TILDE_, you like]?');
 
 =head3 Structure Related
@@ -455,7 +455,7 @@ Takes no arguments, returns a regular expression that matches bracket notation v
     elsif ($string =~ m/$bn_var_regexp/) {
         # string contains a BN variable
     }
-    
+
     my @bn_variables = $string =~ m/($bn_var_regexp)/g;
 
 =head4 get_non_translatable_type_regexp()
@@ -466,9 +466,9 @@ Takes no arguments, returns a regular expression that matches types that should 
     if ($piece->{'type'} =~ m/\A$non_translatable_type_regexp\z/) {
         # nothing to translate here, move along, move along
     }
-    
+
     if ($xliff->{'ctype'} =~ m/\Ax-bn-$non_translatable_type_regexp\z/) {
-        # handle the XLIFF syntax for non-translatable <ph> tags back into bracket notation 
+        # handle the XLIFF syntax for non-translatable <ph> tags back into bracket notation
     }
 
 =head4 string_has_opening_or_closing_bracket()
@@ -508,7 +508,7 @@ Used internally to build the hash’s 'type' value.
 Nothing besides what is documented in phrase2struct().
 
 =head1 CONFIGURATION AND ENVIRONMENT
-  
+
 Locale::Maketext::Utils::Phrase requires no configuration files or environment variables.
 
 =head1 DEPENDENCIES

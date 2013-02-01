@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.35';
+$Locale::Maketext::Utils::VERSION = '0.36';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -131,10 +131,14 @@ sub init {
     );
 }
 
-# TODO:
-# *makevar = *maketext; and friends ...
-# sub __WS {
-#     my ($string) = @_;
+# better way to alias things in an ISA package?
+*makevar = *Cpanel::CPAN::Locale::Maketext::maketext;
+
+# TODO Normalize White Space [into key form] (name? export, do meth/function or just funtion?, etc), needs POD and tests once finalized (update parser also: rt 80489)
+# sub _NWS {
+#
+#     # $lh->_NWS($str) || _NWS($str)
+#     my $string = @_ > 1 ? $_[1] : $_[0];
 #
 #     $string =~ s/\s+/ /g;
 #     $string =~ s/\A(?:\x20|\xc2\xa0)+//g;      # remove leading white space
@@ -293,7 +297,7 @@ sub get_locale_display_pattern {
     # my ( $lh, $tag ) = @_;
     # $tag ||= $lh->get_language_tag();
 
-    return Locales::DB::LocaleDisplayPattern::Tiny::get_locale_display_pattern( $_[1] || $_[0]->get_language_tag() );
+    return Locales::DB::LocaleDisplayPattern::Tiny::get_locale_display_pattern( $_[1] || $_[0]->{'fallback_locale'} || $_[0]->get_language_tag() );
 }
 
 sub get_language_tag_character_orientation {
@@ -301,7 +305,7 @@ sub get_language_tag_character_orientation {
     # my ( $lh, $tag ) = @_;
     # $tag ||= $lh->get_language_tag();
 
-    return Locales::DB::CharacterOrientation::Tiny::get_orientation( $_[1] || $_[0]->get_language_tag() );
+    return Locales::DB::CharacterOrientation::Tiny::get_orientation( $_[1] || $_[0]->{'fallback_locale'} || $_[0]->get_language_tag() );
 }
 
 sub text {
@@ -1473,6 +1477,19 @@ sub maketext_plain_context {
     $lh->set_context($cur);
     return $res;
 }
+
+# TODO: how crazy do we want to go with context specific versions of maketext()ish methods?
+# *makevar_html_context = \&maketext_html_context;
+# *makevar_ansi_context = \&maketext_ansi_context;
+# *makeavr_plain_context = \&maketext_plain_context;
+#
+# sub makethis_html_context {};
+# sub makethis_ansi_context {};
+# sub makethis_plain_context {};
+#
+# sub makethis_base_html_context {};
+# sub makethis_base_ansi_context {};
+# sub makethis_base_plain_context {};
 
 #### / output context methods ###
 

@@ -73,23 +73,27 @@ Alternatively, and at times more ideally, you can keep each module's aliases in 
 
 =head1 METHODS
 
-=head2 $lh->print($key, @args);
+=head2 Deprecated for clarity:
+
+These are deprecated because they are ambiguous names (i.e. used in other places by other things) and thus L<problematic when harvesting phrases|Text::Extract::MaketextCallPhrases>.
+
+=head3 $lh->print($key, @args);
 
 Shortcut for
 
     print $lh->maketext($key, @args);
 
-=head2 $lh->fetch($key, @args);
+=head3 $lh->fetch($key, @args);
 
 Alias for 
 
     $lh->maketext($key, @args);
 
-=head2 $lh->say($key, @args);
+=head3 $lh->say($key, @args);
 
 Like $lh->print($key, @args); except appends $/ || \n
 
-=head2 $lh->get($key, @args);
+=head3 $lh->get($key, @args);
 
 Like $lh->fetch($key, @args); except appends $/ || \n
 
@@ -234,9 +238,11 @@ Get the lexicon’s text of 'Your key here.' without compiling it (in other word
 
 The results are suitable for the first arg to makethis().
 
-=head3 $lh->text('Your key here.')–deprecated
+=head3 $lh->text('Your key here.')–deprecated for clarity
 
 Deprecated name of $lh->lextext().
+
+It is deprecated because it is an ambiguous name (i.e. used in other places by other things) and thus L<problematic when harvesting phrases|Text::Extract::MaketextCallPhrases>.
 
 =head2 $lh->makethis()
 
@@ -247,6 +253,28 @@ Like maketext() but does not lookup the phrase in the lexicon and compiles the p
 Like makethis() but uses the base class as the phrase compiler instead of the object.
 
 This is usful in testing when you want consistent semantics on arbitrary objects.
+
+=head2 $lh->makevar()
+
+This is an alias to maketext(). Its sole purpose is to be used to semantically indicate that the source code does not contain a translatable string in the call to maketext().
+
+For example:
+
+    $lh->maketext('Hello World') 
+    
+It is easy to tell that we need to provide translations for 'Hello World'. But given:
+
+    $lh->maketext($api_rv->{'string'}) 
+
+It is not easy to determine what $api_rv->{'string'} is in order to pass it on to the translation team.
+
+However if we do that like this:
+
+     my $string = translatable('Hello World'); # See Locale::Maketext::Utils::MarkPhrase
+     …
+     $lh->makevar($api_rv->{'string'})
+
+Then the parser can simply ignore the call to makevar() and find the value it is interested in via translatable()
 
 =head2 $lh->get_asset()
 

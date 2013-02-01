@@ -1,11 +1,11 @@
-use Test::More tests => 543;
+use Test::More tests => 559;
 
 BEGIN {
     use_ok('Locale::Maketext::Utils::Phrase::cPanel');
 }
 
-our $norm = Locale::Maketext::Utils::Phrase::cPanel->new( { 'run_extra_filters' => 1 } );
-my $spec = Locale::Maketext::Utils::Phrase::cPanel->new( 'WhiteSpace', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
+our $norm = Locale::Maketext::Utils::Phrase::cPanel->new_source( { 'run_extra_filters' => 1 } );
+my $spec = Locale::Maketext::Utils::Phrase::cPanel->new_source( 'WhiteSpace', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 
 our %global_all_warnings = (
     'special' => [],
@@ -20,7 +20,7 @@ our %global_filter_warnings = (
 {
 
     # need to skip BeginUpper and EndPunc since it bumps 1 value in one test but not the others. Also Ellipsis so we don't have to factor in an extra change
-    local $norm = Locale::Maketext::Utils::Phrase::cPanel->new( qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Escapes), { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
+    local $norm = Locale::Maketext::Utils::Phrase::cPanel->new_source( qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Escapes), { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 
     run_32_tests(
         'filter_name'    => 'WhiteSpace',
@@ -180,11 +180,15 @@ run_32_tests(
     'diag' => 0,
 );
 {
-    my $ell = Locale::Maketext::Utils::Phrase::cPanel->new( 'Ellipsis', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
+    my $ell = Locale::Maketext::Utils::Phrase::cPanel->new_source( 'Ellipsis', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
     for my $good (
         ' … I am … good, you …',                                                    # normal spaces
         ' … I am … good, you …',                                                # character (OSX: ⌥space)
         ' …[output,nbsp]I am[output,nbsp]…[output,nbsp]good, you[output,nbsp]…',    # visual [output,nbsp]
+        'Foo ….',
+        'Foo …!',
+        'Foo …?',
+        'Foo …:',
       ) {
         my $valid = $ell->normalize($good);
         ok( $valid->get_status(),             "valid: RES get_status()" );
@@ -196,42 +200,37 @@ run_32_tests(
 {
 
     # need to skip BeginUpper and Whitespace since it bumps 1 value in one test but not the others.
-    local $norm = Locale::Maketext::Utils::Phrase::cPanel->new( qw(NonBytesStr Grapheme Ampersand Markup Ellipsis EndPunc Escapes), { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
+    local $norm = Locale::Maketext::Utils::Phrase::cPanel->new_source( qw(NonBytesStr Grapheme Ampersand Markup Ellipsis EndPunc Escapes), { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 
     run_32_tests(
         'filter_name'    => 'Ellipsis',
-        'filter_pos'     => 4,                                                                                                                      # is 5 with no args to new()
-        'original'       => " …I… am .. bad ,,, you …e.g., foo … bar[output,nbsp]…[output,nbsp]baz … what…you…[output,nbsp]",
-        'modified'       => " … I … am … bad … you … e.g., foo … bar[output,nbsp]…[output,nbsp]baz … what … you …",
+        'filter_pos'     => 4,                                                                                                                                    # is 5 with no args to new_source()
+        'original'       => " …I… am .. bad ,,, you …e.g., foo … bar[output,nbsp]…[output,nbsp]baz … (… foo …) what…you…[output,nbsp]",
+        'modified'       => " … I … am … bad … you … e.g., foo … bar[output,nbsp]…[output,nbsp]baz … (… foo …) what … you …",
         'all_violations' => {
-            'special' => [
-                'multiple period/comma instead of ellipsis character',
-                'initial ellipsis needs to be preceded by a normal space',
-                'initial ellipsis needs to be followed by a normal space or a non-break-space in bracket notation or character form',
-                'final ellipsis should not be followed by anything',
-                'final ellipsis needs to be preceded by a normal space or a non-break-space in bracket notation or character form',
-                'medial ellipsis should be surrounded on each side by a normal space or a non-break-space in bracket notation or character form',
-            ],
-            'default' => undef,                                                                                                                     # undef means "same as special"
+            'special' => [],
+            'default' => [],
         },
-        'all_warnings'      => \%global_all_warnings,
-        'filter_violations' => {
+        'all_warnings' => {
             'special' => [
                 'multiple period/comma instead of ellipsis character',
-                'initial ellipsis needs to be preceded by a normal space',
-                'initial ellipsis needs to be followed by a normal space or a non-break-space in bracket notation or character form',
-                'final ellipsis should not be followed by anything',
-                'final ellipsis needs to be preceded by a normal space or a non-break-space in bracket notation or character form',
-                'medial ellipsis should be surrounded on each side by a normal space or a non-break-space in bracket notation or character form',
+                'initial ellipsis should be preceded by a normal space',
+                'initial ellipsis should be followed by a normal space or a non-break-space (in bracket notation or character form)',
+                'final ellipsis should be followed by a valid punctuation mark or nothing',
+                'final ellipsis should be preceded by a normal space or a non-break-space (in bracket notation or character form)',
+                'medial ellipsis should be surrounded on each side by a parenthesis or normal space or a non-break-space (in bracket notation or character form)',
             ],
-            'default' => undef,                                                                                                                     # undef means "same as special"
-        },    # undef means "same as all_violations"
-        'filter_warnings' => \%global_filter_warnings,
-        'return_value'    => {
-            'special' => [ 0, 6,                             0, 1 ],
+            'default' => undef,    # undef means "same as special"
+        },
+        'filter_violations' => undef,
+        'filter_warnings'   => undef,
+        'return_value'      => {
+            'special' => [ -1, 0,                             6, 1 ],
             'default' => undef, # undef means "same as special"
         },
-        'diag' => 0,
+        'get_status_is_warnings'        => 1,
+        'filter_does_not_modify_string' => 0,
+        'diag'                          => 0,
     );
 }
 
@@ -241,18 +240,20 @@ run_32_tests(
     'original'       => 'wazzup?',
     'modified'       => 'wazzup?',
     'all_violations' => {
-        'special' => [
-            'Does not start with an uppercase letter, ellipsis preceded by space, or bracket notation.',
-        ],
-        'default' => undef,    # undef means "same as special"
+        'special' => [],
+        'default' => [],
     },
-    'all_warnings'      => \%global_all_warnings,
-    'filter_violations' => undef,                      # undef means "same as all_violations"
-    'filter_warnings'   => \%global_filter_warnings,
+    'all_warnings' => {
+        'special' => ['Does not start with an uppercase letter, ellipsis preceded by space, or bracket notation.'],
+        'default' => undef,
+    },
+    'filter_violations' => undef,    # undef means "same as all_violations"
+    'filter_warnings'   => undef,
     'return_value'      => {
-        'special' => [ 0, 1,                             0 ],
+        'special' => [ -1, 0,                             1 ],
         'default' => undef, # undef means "same as special"
     },
+    'get_status_is_warnings'        => 1,
     'filter_does_not_modify_string' => 1,
     'diag'                          => 0,
 );
@@ -262,15 +263,15 @@ run_32_tests(
     $global_all_warnings{'special'} = \@{ $global_all_warnings{'special'} };
     $global_all_warnings{'default'} = \@{ $global_all_warnings{'default'} };
 
-    push @{ $global_all_warnings{'special'} }, 'Non title/label does not end with some sort of puncuation or bracket notation.';
-    push @{ $global_all_warnings{'default'} }, 'Non title/label does not end with some sort of puncuation or bracket notation.';
+    push @{ $global_all_warnings{'special'} }, 'Non title/label does not end with some sort of punctuation or bracket notation.';
+    push @{ $global_all_warnings{'default'} }, 'Non title/label does not end with some sort of punctuation or bracket notation.';
 
     local %global_filter_warnings = %global_filter_warnings;
     $global_filter_warnings{'special'} = \@{ $global_filter_warnings{'special'} };
     $global_filter_warnings{'default'} = \@{ $global_filter_warnings{'default'} };
 
-    push @{ $global_filter_warnings{'special'} }, 'Non title/label does not end with some sort of puncuation or bracket notation.';
-    push @{ $global_filter_warnings{'default'} }, 'Non title/label does not end with some sort of puncuation or bracket notation.';
+    push @{ $global_filter_warnings{'special'} }, 'Non title/label does not end with some sort of punctuation or bracket notation.';
+    push @{ $global_filter_warnings{'default'} }, 'Non title/label does not end with some sort of punctuation or bracket notation.';
 
     run_32_tests(
         'filter_name'    => 'EndPunc',
@@ -449,7 +450,7 @@ run_32_tests(
 {
 
     # Consider parser throws syntax error
-    local $norm = Locale::Maketext::Utils::Phrase::cPanel->new( qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellipsis BeginUpper EndPunc Escapes Compiles), { 'skip_defaults_when_given_filters' => 1 } );
+    local $norm = Locale::Maketext::Utils::Phrase::cPanel->new_source( qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellipsis BeginUpper EndPunc Escapes Compiles), { 'skip_defaults_when_given_filters' => 1 } );
 
     run_32_tests(
         'filter_name'    => 'Compiles',
@@ -537,7 +538,7 @@ run_32_tests(
 }
 
 # existing BN method
-my $comp_filt = Locale::Maketext::Utils::Phrase::cPanel->new( 'Compiles', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
+my $comp_filt = Locale::Maketext::Utils::Phrase::cPanel->new_source( 'Compiles', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 my $comp_filt_res = $comp_filt->normalize('Hello [format_bytes,_1].');
 ok( $comp_filt_res->get_status(),             "spec: Compiles.pm w/ existing BN method: RES get_status()" );
 ok( !$comp_filt_res->filters_modify_string(), "spec: Compiles.pm w/ existing BN method: RES filters_modify_string()" );
@@ -551,7 +552,7 @@ is( $norm_comp_filt_res->get_warning_count(),   0, "norm: Compiles w/ existing B
 is( $norm_comp_filt_res->get_violation_count(), 0, "norm: Compiles w/ existing BN method: RES get_violation_count()" );
 
 # escapes special cases
-my $esc_filt = Locale::Maketext::Utils::Phrase::cPanel->new( 'Escapes', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
+my $esc_filt = Locale::Maketext::Utils::Phrase::cPanel->new_source( 'Escapes', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 my $esc_filt_res = $esc_filt->normalize('I am \x{263A}.');
 is( $esc_filt_res->get_aggregate_result(), 'I am \x{263A}.', 'Escapes–leaves \x alone.' );
 
@@ -580,7 +581,7 @@ sub run_32_tests {
     my %args = @_;
 
     diag("cPanel.pm $args{'filter_name'} filter");
-    my $spec = Locale::Maketext::Utils::Phrase::cPanel->new( $args{'filter_name'}, { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
+    my $spec = Locale::Maketext::Utils::Phrase::cPanel->new_source( $args{'filter_name'}, { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
 
     if ( !defined $args{'return_value'}{'special'} ) {
         $args{'return_value'}{'special'} = $args{'return_value'}{'default'};

@@ -14,7 +14,7 @@ sub normalize_maketext_string {
         if ( !__is_title_case( ${$string_sr} ) ) {
 
             # ${$string_sr} = ${$string_sr} . "[comment,missing puncutation ?]";
-            $filter->add_warning('Non title/label does not end with some sort of puncuation or bracket notation.');
+            $filter->add_warning('Non title/label does not end with some sort of punctuation or bracket notation.');
         }
     }
 
@@ -54,7 +54,15 @@ We want to make sure phrases end correctly and consistently.
 
 =head2 Rationale
 
-Why would we want incorrect or inconsistent things?
+Correct punctuation makes the meaning clearer to end users.
+
+Clearer meaning makes it easier to make a good translation.
+
+Consistent punctuation makes it easier for developers to work with.
+
+Consistent punctuation is a sign of higher quality product.
+
+Missing punctuation is a sign that partial phrases are in use or an error has been made.
 
 =head1 IF YOU USE THIS FILTER ALSO USE …
 
@@ -70,9 +78,9 @@ None
 
 =over 4
 
-=item Non title/label does not end with some sort of puncuation or bracket notation.
+=item Non title/label does not end with some sort of punctuation or bracket notation.
 
-Problem should be self explanatory. Ending puncuation is not !, ?, ., :, bracket notation, or an ellipsis character.
+Problem should be self explanatory. Ending punctuation is not !, ?, ., :, bracket notation, or an ellipsis character.
 
 =back
 

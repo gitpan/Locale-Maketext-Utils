@@ -19,8 +19,8 @@ sub new_target {
     my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
 
     # IF YOU CHANGE THIS CHANGE THE “new_target()” POD SECTION ALSO
-    $conf->{'exclude_filters'}{'BeginUpper'} = 1;                                                                                    # IF YOU CHANGE THIS CHANGE THE “new_target()” POD SECTION ALSO
-    $conf->{'exclude_filters'}{'EndPunc'}    = 1;                                                                                    # IF YOU CHANGE THIS CHANGE THE “new_target()” POD SECTION ALSO
+    $conf->{'exclude_filters'}{'BeginUpper'} = 1;    # IF YOU CHANGE THIS CHANGE THE “new_target()” POD SECTION ALSO
+    $conf->{'exclude_filters'}{'EndPunc'}    = 1;    # IF YOU CHANGE THIS CHANGE THE “new_target()” POD SECTION ALSO
 
     # IF YOU CHANGE THIS CHANGE THE “new_target()” POD SECTION ALSO
 
@@ -345,9 +345,9 @@ This document describes Locale::Maketext::Utils::Phrase::Norm version 0.2
     use Locale::Maketext::Utils::Phrase::Norm;
 
     my $norm = Locale::Maketext::Utils::Phrase::Norm->new_source() || die;
-    
+
     my $result = $norm->normalize('This office has worked [quant,_1,day,days,zero days] without an “accident”.');
-    
+
     # process $result
 
 =head1 DESCRIPTION
@@ -360,13 +360,17 @@ Analyze, report, and normalize a maketext style phrase based on rules organized 
 
 =head3 new_source()
 
-Create a new object with all the filters initialized.
+A “source phrase” is a phrase (suitable for a call to maketext()) in the main locale’s language that we intend to be localizable.
+
+Typically this is the key of a lexicon’s hash but it can be the value if the main locale lexicon’s key is an “Arbitrary Key”, that is, if the value is different from the key in the main locale’s lexicon.
+
+new_source() creates a new object with all the filters initialized for source phrases.
 
 Giving no arguments means it will employ all of the default filter modules (documented in L</"DEFAULT FILTERS">).
 
-Otherwise the optional arguments are: 
+Otherwise the optional arguments are:
 
-=over 4 
+=over 4
 
 =item A list of filter module name spaces to run after the default filter modules.
 
@@ -377,7 +381,7 @@ e.g. Given 'Locale::Maketext::Utils::Phrase::Norm::MyCoolFilter' you can pass th
 =item The last argument can be a hashref of options:
 
     my $norm = Locale::Maketext::Utils::Phrase::Norm->new_source('My::Filter::XYZ'); # all default filters followed by the My::Filter::XYZ filter
-    
+
     my $norm = Locale::Maketext::Utils::Phrase::Norm->new_source('My::Filter::XYZ', { 'skip_defaults_when_given_filters' => 1 }); # only do My::Filter::XYZ the filter
 
 The options are outlined below and are all optional:
@@ -416,13 +420,15 @@ The key can be the long or short name space of the filter modules and the value 
 
 =back
 
-=back 
+=back
 
 new_source() carp()s and returns false if there is some sort of failure (documented in L</"DIAGNOSTICS">).
 
 =head3 new_target()
 
-Just like new_source() but uses a subset of the L</"DEFAULT FILTERS"> that apply to translations.
+A “target phrase” is the translated version of a given source phrase. This is the value of a non-main-locale lexicon’s hash.
+
+new_target() is just like new_source() but uses a subset of the L</"DEFAULT FILTERS"> that apply to translations.
 
 Currently the exclusion of L<BeginUpper|Locale::Maketext::Utils::Phrase::Norm::BeginUpper> and L<EndPunc|Locale::Maketext::Utils::Phrase::Norm::EndPunc> from the L</"DEFAULT FILTERS"> is what makes up this object.
 
@@ -442,7 +448,7 @@ Returns the object you instantiated the L</"Main object"> with.
 
 If you did not specify an argument a L<Locale::Maketext::Utils::Mock> object is used. That means all the cool stuff in your locale object that you might want to use in your filter will not be available.
 
-=head3 set_maketext_object() 
+=head3 set_maketext_object()
 
 Takes the same object you’d pass to the constructor method via ‘maketext_object’.
 
@@ -474,7 +480,7 @@ Returns the status of all the filters:
 
 =item False means there was at least one violation and possibly warnings.
 
-=back 
+=back
 
 =head3 get_warning_count()
 
@@ -620,19 +626,13 @@ The included default filters are listed below in the order they are executed by 
 
 =item L<BeginUpper|Locale::Maketext::Utils::Phrase::Norm::BeginUpper>
 
-Falls under L</extra filters> currently.
-
 =item L<EndPunc|Locale::Maketext::Utils::Phrase::Norm::EndPunc>
 
 Falls under L</extra filters> currently.
 
 =item L<Consider|Locale::Maketext::Utils::Phrase::Norm::Consider>
 
-Has one check that falls under L</extra filters> currently.
-
 =item L<Escapes|Locale::Maketext::Utils::Phrase::Norm::Escapes>
-
-Falls under L</extra filters> currently.
 
 =item L<Compiles|Locale::Maketext::Utils::Phrase::Norm::Compiles>
 
@@ -640,7 +640,7 @@ Falls under L</extra filters> currently.
 
 =head2 extra filters
 
-It may be desireable for some filters to not run by default but still be easily applied when needed. 
+It may be desireable for some filters to not run by default but still be easily applied when needed.
 
 The extra filter mechanism allows for this as documented specifically throught this POD.
 
@@ -650,12 +650,12 @@ A filter module is simply a package that defines a function that does the filter
 
 =head2 normalize_maketext_string()
 
-This gets passed a single argument: the L</"Filter Result Object"> that defines data about the phrase. 
+This gets passed a single argument: the L</"Filter Result Object"> that defines data about the phrase.
 
-That object can be used to do the actual checks, modifications if any, and return the expected info back (via $filter->return_value). 
+That object can be used to do the actual checks, modifications if any, and return the expected info back (via $filter->return_value).
 
     package My::Phrase::Filter::X;
-    
+
     sub normalize_maketext_string {
         my ($filter) = @_;
 
@@ -669,7 +669,7 @@ That object can be used to do the actual checks, modifications if any, and retur
 
         return $filter->return_value;
     }
-    
+
     1;
 
 It’s a good idea to explain the filter in it’s POD. Check out L<_Stub|Locale::Maketext::Utils::Phrase::Norm::_Stub> for some boilerplate.
@@ -740,8 +740,8 @@ Daniel Muey  C<< <http://drmuey.com/cpan_contact.pl> >>
 
 Copyright (c) 2012 cPanel, Inc. C<< <copyright@cpanel.net>> >>. All rights reserved.
 
-This library is free software; you can redistribute it and/or modify it under 
-the same terms as Perl itself, either Perl version 5.10.1 or, at your option, 
+This library is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself, either Perl version 5.10.1 or, at your option,
 any later version of Perl 5 you may have available.
 
 =head1 DISCLAIMER OF WARRANTY

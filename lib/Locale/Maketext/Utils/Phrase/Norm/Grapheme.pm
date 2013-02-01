@@ -29,7 +29,11 @@ Graphemes are not very human readable and require interpolation, we can avoid bo
 
 This helps give consistency, clarity, and simplicity.
 
-e.g. If we parse a string and find 'Commencing compilation \xe2\x80\xa6' then we have to interpolate that string into 'Commencing compilation …' before we can look it up to see if it exists in a hash.
+If we parse a string and find 'Commencing compilation \xe2\x80\xa6' then we have to interpolate that string into 'Commencing compilation …' before we can look it up to see if it exists in a hash.
+
+Graphemes also add a layer of complexity that hinders translators and thus makes room for lower quality translations.
+
+Developers have it slightly better in that they’ll recognize it but it still requires effort to figure out what it is exactly and to determine what sequence they need for a given character.
 
 You can simply use the character itself or a bracket notation method for the handful of markup related or visually special characters
 
@@ -43,7 +47,7 @@ If you get false positives then that only goes to help highlight how ambiguity a
 
 A sequence of \xe2\x98\xba\xe2\x80\xa6 will be replaced w/ [comment,grapheme “\xe2\x98\xba\xe2\x80\xa6”]
 
-=back 
+=back
 
 =head1 possible warnings
 

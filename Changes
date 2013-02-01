@@ -1,5 +1,19 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.36  Mon Aug 13 12:28:55 2012
+    - rt 78889 - add blurb about source/target phrases to new_source()/new_target() POD
+    - Update MarkPhrase POD to reference lextext() instead of the deprecated text()
+    - Add makevar() method
+    - Alias makevar() correctly
+    - new() to new_source() in tests
+    - Promote Escapes, BeginUpper, and Consider’s bare-variable check to default filters.
+    - Improve Filters’ “Normalization” and “Rationale” POD sections. (includes rt 78749 and rt 80066)
+    - Utils.pm subset of rt 81300 and comment fixups
+    - Make BeginUpper filter a warning
+    - Make Ellipsis filter a warning
+    - rt 81243: expand medial ellipsis check to handle being at the beginning or end of a parenthesized chunk of text
+    - rt 81243 (sort of): allow punctuation after trailing ellipsis
+    
 0.35  Thu Aug  9 15:30:52 2012
     - rt 78871 - rename normalizing object constructors
     - rt 78748 - ellipsis typo

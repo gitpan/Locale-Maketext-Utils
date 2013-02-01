@@ -61,7 +61,9 @@ Check that the string compiles.
 
 =head2 Rationale
 
-Why would we not want to catch syntax errors?
+If the source phrase is broken, we have to die at run time. If the target phrase is broken, we do not get the translation.
+
+Conceivably there could also be more subtle problems it could cause.
 
 =head1 possible violations
 
@@ -69,11 +71,11 @@ Why would we not want to catch syntax errors?
 
 =item Bracket Notation Error
 
-There was a problem compiling the string. 
+There was a problem compiling the string.
 
 The string is replaced with a comment that details the problem, typically including an escaped verison of the problematic string: [comment,Bracket Notation Error: DETAILS_GO_HERE]
 
-=back 
+=back
 
 =head1 possible warnings
 

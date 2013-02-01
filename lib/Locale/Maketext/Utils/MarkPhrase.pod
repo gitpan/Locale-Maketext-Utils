@@ -14,11 +14,11 @@ Locale::Maketext::Utils::MarkPhrase - explicitly mark a phrase as translatable
 
 =head1 DESCRIPTION
 
-Lets say you typically harvest phrases from your code by looking for calls to maketext() or text().
+Let’s say you typically harvest phrases from your code by looking for calls to maketext() or lextext().
 
-Sometimes you need to have a string in code that does not have your locale system in place so you can’t use maketext() or text() for that purpose. 
+Sometimes you need to have a string in code that does not have your locale system in place so you can’t use maketext() or lextext() for that purpose. 
 
-If you made fake ones you’d either have untranslated/uncompiled results or the consumer of the result would have to fiogure out if its good or if still needs processing.
+If you made fake ones you’d either have untranslated/uncompiled results or the consumer of the result would have to figure out if it’s good or if still needs processing.
 
 Thats ugly and overly complex no matter how you slice it. A simple solution is to have a marker function that parsers can look for that passes the original string to the consumer for normal handling.
 

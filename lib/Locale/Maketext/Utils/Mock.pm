@@ -77,7 +77,7 @@ This module does all the work for you and behaves like a typical L<Locale::Maket
 
 You can also add additional locales at will.
 
-=head1 INTERFACE 
+=head1 INTERFACE
 
 =head2 get_handle()
 
@@ -103,7 +103,7 @@ It returns the number of subclasses successfully created.
 init_mock_locales() carp()s if there was a problem createing the subclass.
 
 =head1 CONFIGURATION AND ENVIRONMENT
-  
+
 Locale::Maketext::Utils::Mock requires no configuration files or environment variables.
 
 =head1 DEPENDENCIES

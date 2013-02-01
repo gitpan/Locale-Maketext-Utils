@@ -1,4 +1,4 @@
-#!perl 
+#!perl
 
 use Test::More;
 plan skip_all => 'POD tests are only run in RELEASE_TESTING mode.' unless $ENV{'RELEASE_TESTING'};
