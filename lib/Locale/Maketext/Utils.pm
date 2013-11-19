@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.36';
+$Locale::Maketext::Utils::VERSION = '0.37';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -34,6 +34,24 @@ sub _compile {
     };
 }
 
+# surgically alter a part of L::M::_langtag_munging() that is buggy but cannot otherwise be overridden
+no warnings 'redefine';
+*I18N::LangTags::panic_languages = sub {              # make it CLDR based instead of arbitrary
+    my (@languages) = @_;
+
+    my @tags;
+
+    for my $arg (@languages) {
+        next if substr( $arg, 0, 2 ) =~ m/i[-_]/;
+
+        my $loc = Locales->new($arg);
+        next if !$loc;
+        push @tags, $loc->get_fallback_list();
+    }
+
+    return @tags, @languages, 'en';    # same results but CLDR based instead of arbitrary (e.g. it falling back to es, whaaaa?)
+};
+
 sub get_handle {
     my ( $class, @langtags ) = @_;
 
@@ -63,7 +81,8 @@ sub get_locales_obj {
             ?        ( Locales->new( $lh->{'fallback_locale'} )
                   || ( $lh->{'fallback_locale'} ne substr( $lh->{'fallback_locale'}, 0, 2 ) ? Locales->new( substr( $lh->{'fallback_locale'}, 0, 2 ) ) : '' ) )
             : ''
-          ) || Locales->new('en');
+          )
+          || Locales->new('en');
     }
 
     return $lh->{'Locales.pm'}{$tag};
@@ -131,8 +150,11 @@ sub init {
     );
 }
 
-# better way to alias things in an ISA package?
-*makevar = *Cpanel::CPAN::Locale::Maketext::maketext;
+sub makevar {
+    my ( $lh, $phrase, @args ) = @_;
+    @_ = ( $lh, @{$phrase} ) if !@args && ref($phrase) eq 'ARRAY';    # Feature per rt 85588
+    goto &Locale::Maketext::maketext;
+}
 
 # TODO Normalize White Space [into key form] (name? export, do meth/function or just funtion?, etc), needs POD and tests once finalized (update parser also: rt 80489)
 # sub _NWS {
@@ -888,6 +910,7 @@ sub datetime {
         }
     }
 
+    $format = '' if !defined $format;
     return $dt->format_cldr( $dt->{'locale'}->format_for($format) || $format || $dt->{'locale'}->date_format_long() );
 }
 
@@ -1050,6 +1073,8 @@ sub boolean {
 
 sub __proc_string_with_embedded_under_vars {
     my $str = $_[0];
+    return if !defined $str;
+
     return $str if $str !~ m/\_(\-?[0-9]+)/;
     my @args = __caller_args( $_[1] );    # this way be dragons
     $str =~ s/\_(\-?[0-9]+)/$args[$1]/g;
@@ -1064,13 +1089,23 @@ sub __caller_args {
     return @DB::args;
 }
 
+sub __proc_emb_meth {
+    my ( $lh, $str ) = @_;
+
+    return if !defined $str;
+
+    $str =~ s/(su[bp])\(((?:\\\)|[^\)])+?)\)/my $s=$2;my $m="output_$1";$s=~s{\\\)}{\)}g;$lh->$m($s)/eg;
+    $str =~ s/chr\(((?:\d+|[\S]))\)/$lh->output_chr($1)/eg;
+    $str =~ s/numf\((\d+(?:\.\d+)?)\)/$lh->numf($1)/eg;
+
+    return $str;
+}
+
 sub output {
     my ( $lh, $output_function, $string, @output_function_args ) = @_;
 
     if ( defined $string && $string ne '' && $string =~ tr/(// ) {
-        $string =~ s/(su[bp])\(((?:\\\)|[^\)])+?)\)/my $s=$2;my $m="output_$1";$s=~s{\\\)}{\)}g;$lh->$m($s)/eg;
-        $string =~ s/chr\(((?:\d+|[\S]))\)/$lh->output_chr($1)/eg;
-        $string =~ s/numf\((\d+(?:\.\d+)?)\)/$lh->numf($1)/eg;
+        $string = __proc_emb_meth( $lh, $string );
     }
 
     if ( my $cr = $lh->can( 'output_' . $output_function ) ) {
@@ -1089,40 +1124,52 @@ sub output {
 }
 
 sub output_encode_puny {
-    require Net::LibIDN;
+    my ( $lh, $utf8 ) = @_;    # ? TODO or YAGNI ? accept either unicode ot utf8 string (i.e. via String::UnicodeUTF8 instead of utf8::- if so, use in output_decode_puny also)
+    return $utf8 if $utf8 =~ m/^xn--/;    # do not encode it if it is already punycode
 
-    if ( $_[1] =~ m/\@/ ) {
-        my ( $nam, $dom ) = split( /@/, $_[1], 2 );
+    require Net::IDN::Encode;
+
+    if ( $utf8 =~ m/(?:\@|\xef\xbc\xa0|\xef\xb9\xab)/ ) {    # \x{0040}, \x{FF20}, \x{FE6B}
+        my ( $nam, $dom ) = split( /(?:\@|\xef\xbc\xa0|\xef\xb9\xab)/, $utf8, 2 );
 
         # TODO: ? multiple @ signs ...
         # my ($dom,$nam) = split(/\@/,reverse($_[1]),2);
         #        $dom = reverse($dom);
         #        $nam = reverse($nam);
-        return Net::LibIDN::idn_to_ascii( $nam, 'utf-8' ) . '@' . Net::LibIDN::idn_to_ascii( $dom, 'utf-8' );
+        utf8::decode($nam);    # turn utf8 bytes into a unicode string
+        utf8::decode($dom);    # turn utf8 bytes into a unicode string
+
+        return Net::IDN::Encode::to_ascii($nam) . '@' . Net::IDN::Encode::domain_to_ascii($dom);
     }
 
-    # this will act funny if there are @ symbols:
-    return Net::LibIDN::idn_to_ascii( $_[1], 'utf-8' );
+    utf8::decode($utf8);       # turn utf8 bytes into a unicode string
+    return Net::IDN::Encode::domain_to_ascii($utf8);
 }
 
 sub output_decode_puny {
-    require Net::LibIDN;
+    my ( $lh, $puny ) = @_;
+    return $puny if $puny !~ m/^xn--/;    # do not decode it if it isn't punycode
 
-    if ( $_[1] =~ m/\@/ ) {
-        my ( $nam, $dom ) = split( /@/, $_[1], 2 );
+    require Net::IDN::Encode;
+
+    if ( $puny =~ m/\@/ ) {
+        my ( $nam, $dom ) = split( /@/, $puny, 2 );
 
         # TODO: ? multiple @ signs ...
         # my ($dom,$nam) = split(/\@/,reverse($_[1]),2);
         #        $dom = reverse($dom);
         #        $nam = reverse($nam);
-        return Net::LibIDN::idn_to_unicode( $nam, 'utf-8' ) . '@' . Net::LibIDN::idn_to_unicode( $dom, 'utf-8' );
+        my $res = Net::IDN::Encode::to_unicode($nam) . '@' . Net::IDN::Encode::domain_to_unicode($dom);
+        utf8::encode($res);    # turn unicode string back into utf8 bytes
+        return $res;
     }
 
-    # this will act funny if there are @ symbols:
-    return Net::LibIDN::idn_to_unicode( $_[1], 'utf-8' );
+    $res = Net::IDN::Encode::domain_to_unicode($puny);
+    utf8::encode($res);        # turn unicode string back into utf8 bytes
+    return $res;
 }
 
-my $has_encode;    # checking for Encode this way facilitates only checking @INC once for the module on systems that do not have Encode
+my $has_encode;                # checking for Encode this way facilitates only checking @INC once for the module on systems that do not have Encode
 
 sub output_chr {
     my ( $lh, $chr_num ) = @_;
@@ -1205,7 +1252,7 @@ sub output_asis_for_tests {
 }
 
 sub __make_attr_str_from_ar {
-    my ( $attr_ar, $strip_hr ) = @_;
+    my ( $attr_ar, $strip_hr, $addin ) = @_;
     if ( ref($attr_ar) eq 'HASH' ) {
         $strip_hr = $attr_ar;
         $attr_ar  = [];
@@ -1216,19 +1263,41 @@ sub __make_attr_str_from_ar {
 
     my $idx    = 0;
     my $ar_len = @{$attr_ar};
+
+    $idx = 1 if $ar_len % 2;    # handle “Odd number of elements” …
+
+    my $did_addin;
+
     while ( $idx < $ar_len ) {
         if ( exists $strip_hr->{ $attr_ar->[$idx] } ) {
             $idx += 2;
             next;
         }
-        $attr .= qq{ $attr_ar->[$idx]="$attr_ar->[++$idx]"};
+        my $atr = $attr_ar->[$idx];
+        my $val = $attr_ar->[ ++$idx ];
+        if ( exists $addin->{$atr} ) {
+            $val = "$addin->{$atr} $val";
+            $did_addin->{$atr}++;
+        }
+
+        $attr .= qq{ $atr="$val"};
         $idx++;
     }
 
     if ($general_hr) {
         for my $k ( keys %{$general_hr} ) {
             next if exists $strip_hr->{$k};
+            if ( exists $addin->{$k} ) {
+                $general_hr->{$k} = "$addin->{$k} $general_hr->{$k}";
+                $did_addin->{$k}++;
+            }
             $attr .= qq{ $k="$general_hr->{$k}"};
+        }
+    }
+
+    for my $r ( keys %{$addin} ) {
+        if ( !exists $did_addin->{$r} ) {
+            $attr .= qq{ $r="$addin->{$r}"};
         }
     }
 
@@ -1280,9 +1349,11 @@ sub output_abbr {
 
 sub output_acronym {
     my ( $lh, $acronym, $full, @attrs ) = @_;
+
+    # ala bootstrap: class="initialism"
     return !$lh->context_is_html()
       ? "$acronym ($full)"
-      : qq{<acronym title="$full"} . __make_attr_str_from_ar( \@attrs, { 'title' => 1 } ) . qq{>$acronym</acronym>};
+      : qq{<abbr title="$full"} . __make_attr_str_from_ar( \@attrs, { 'title' => 1 }, { 'class' => 'initialism' } ) . qq{>$acronym</abbr>};
 }
 
 sub output_sup {
@@ -1337,19 +1408,29 @@ sub output_url {
 
     if ( !$lh->context_is_html() ) {
         if ($url_text) {
+            $url_text = __proc_emb_meth( $lh, $url_text );
+            $url_text = __proc_string_with_embedded_under_vars( $url_text, 1 );
             return "$url_text ($url)";
         }
 
         if ( exists $output_config{'plain'} ) {
             $output_config{'plain'} ||= $url;
             my $orig = $output_config{'plain'};
+            $output_config{'plain'} = __proc_emb_meth( $lh, $output_config{'plain'} );
             $output_config{'plain'} = __proc_string_with_embedded_under_vars( $output_config{'plain'}, 1 );
+
             $return = $orig ne $output_config{'plain'} && $output_config{'plain'} =~ m/\Q$url\E/ ? $output_config{'plain'} : "$output_config{'plain'} $url";
         }
     }
     else {
         if ( exists $output_config{'html'} ) {
+            $output_config{'html'} = __proc_emb_meth( $lh, $output_config{'html'} );
             $output_config{'html'} = __proc_string_with_embedded_under_vars( $output_config{'html'}, 1 );
+        }
+
+        if ( !$output_config{'html'} ) {
+            $url_text = __proc_emb_meth( $lh, $url_text );
+            $url_text = __proc_string_with_embedded_under_vars( $url_text, 1 );
         }
 
         $output_config{'html'} ||= $url_text || $url;
@@ -1358,6 +1439,7 @@ sub output_url {
             [ @args, $arb_args_hr ],
             {
                 'html'  => 1,
+                'href'  => 1,
                 'plain' => 1,
                 '_type' => 1,
             }
@@ -1375,27 +1457,27 @@ sub output_url {
 #### output context methods ##
 
 sub set_context_html {
-    my ($lh) = @_;
+    my ( $lh, $empty ) = @_;
     my $cur = $lh->get_context();
     $lh->set_context('html');
     return if !$lh->context_is_html();
-    return $cur;
+    return $empty ? '' : $cur;
 }
 
 sub set_context_ansi {
-    my ($lh) = @_;
+    my ( $lh, $empty ) = @_;
     my $cur = $lh->get_context();
     $lh->set_context('ansi');
     return if !$lh->context_is_ansi();
-    return $cur;
+    return $empty ? '' : $cur;
 }
 
 sub set_context_plain {
-    my ($lh) = @_;
+    my ( $lh, $empty ) = @_;
     my $cur = $lh->get_context();
     $lh->set_context('plain');
     return if !$lh->context_is_plain();
-    return $cur;
+    return $empty ? '' : $cur;
 }
 
 my %contexts = (
@@ -1405,11 +1487,17 @@ my %contexts = (
 );
 
 sub set_context {
-    my ( $lh, $context ) = @_;
+    my ( $lh, $context, $empty ) = @_;
 
     if ( !$context ) {
-        require IO::Interactive::Tiny;
-        $lh->{'-t-STDIN'} = IO::Interactive::Tiny::is_interactive() ? 1 : 0;
+        require Web::Detect;
+        if ( Web::Detect::detect_web_fast() ) {
+            $lh->{'-t-STDIN'} = 0;
+        }
+        else {
+            require IO::Interactive::Tiny;
+            $lh->{'-t-STDIN'} = IO::Interactive::Tiny::is_interactive() ? 1 : undef();
+        }
     }
     elsif ( exists $contexts{$context} ) {
         $lh->{'-t-STDIN'} = $contexts{$context};
@@ -1420,6 +1508,11 @@ sub set_context {
         Carp::carp("Given context '$context' is unknown.");
         $lh->{'-t-STDIN'} = $context;
     }
+
+    return
+        $empty ? ''
+      : defined $context && exists $contexts{$context} ? $context
+      :                                                  $lh->{'-t-STDIN'};
 }
 
 sub context_is_html {
@@ -1446,8 +1539,8 @@ sub get_context {
     }
 
     return 'plain' if !defined $lh->{'-t-STDIN'};
-    return 'ansi'  if $lh->{'-t-STDIN'};
-    return 'html'  if !$lh->{'-t-STDIN'};
+    return 'ansi'  if $lh->{'-t-STDIN'} eq "1";
+    return 'html'  if $lh->{'-t-STDIN'} eq "0";
 
     # We don't carp "Given context '...' is unknown." here since we assume if they explicitly set it then they have a good reason to.
     # If it was an accident the set_contex() will have carp()'d already, if they set the variable directly then they're doing it wrong ;)

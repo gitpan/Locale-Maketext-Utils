@@ -1,5 +1,32 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.37  Mon Nov 18 21:50:34 2013
+    - change makevar glob from \* to \& due to binary issues
+    - Handle output,url-with-trailing-var ambiguity
+    - Add href to ignore attribute list of output,url
+    - HTML5-ify output,acronym: bootstrap style
+    - make L::M::_langtag_munging() CLDR aware by overriding buggy I18N::LangTags panic
+    - make set_context() return context (like other context methods)
+        - add empty RV support to all set_context methods
+        - more context tests
+    - rt 79490 - Make context detection smarter via Web::Detect
+    - filter spiff ups:
+        - added pod to begin/end checks suggesting [comment]/[asis] as a possible solution
+        - bare vars:
+            - allow for beginning quoted value: “[_1]” is blah blah blah.
+            - allow for bare-var’s
+            - kill needless uninit value warnings
+            - do not consider BV at the beginning or end of a parenthesized chunk of text to be bare
+            - consider BV immediately next to alphanumeric to be bare var still
+            - title case fix && end not extra
+    - support emb methods in output URL link text
+        - add url emb to display text that does not come from html or plain keys
+    - rt 85588 - makevar() should also, alternatively, accept an array ref (i.e. for easier use in TT)
+    - rt 76706 - silence test warnings from way deep down
+    - rt 79727 - use more readily installable punycode module
+    - update min req versions of Locale::Maketext and Locales to latest
+    - ???
+
 0.36  Mon Aug 13 12:28:55 2012
     - rt 78889 - add blurb about source/target phrases to new_source()/new_target() POD
     - Update MarkPhrase POD to reference lextext() instead of the deprecated text()

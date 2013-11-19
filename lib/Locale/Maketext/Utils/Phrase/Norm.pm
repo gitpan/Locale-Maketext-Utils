@@ -13,7 +13,7 @@ my @default_filters = qw(NonBytesStr WhiteSpace Grapheme Ampersand Markup Ellips
 
 # IF YOU CHANGE THIS CHANGE THE “DEFAULT FILTERS” POD SECTION ALSO
 
-# TODO ?: Acronym, IntroComma, Parens (needs CLDR char/pattern in Locales.pm) [output,chr,(not|in|the|markup|list|or any if ampt() etc happen )???
+# TODO ?: Acronym, IntroComma, Parens (needs CLDR char/pattern in Locales.pm) [output,chr,(not|in|the|markup|list|or any if amp() etc happen )???
 
 sub new_target {
     my $conf = ref( $_[-1] ) eq 'HASH' ? pop(@_) : {};
@@ -628,8 +628,6 @@ The included default filters are listed below in the order they are executed by 
 
 =item L<EndPunc|Locale::Maketext::Utils::Phrase::Norm::EndPunc>
 
-Falls under L</extra filters> currently.
-
 =item L<Consider|Locale::Maketext::Utils::Phrase::Norm::Consider>
 
 =item L<Escapes|Locale::Maketext::Utils::Phrase::Norm::Escapes>
@@ -643,6 +641,8 @@ Falls under L</extra filters> currently.
 It may be desireable for some filters to not run by default but still be easily applied when needed.
 
 The extra filter mechanism allows for this as documented specifically throught this POD.
+
+No filters fall under L</extra filters> currently.
 
 =head1 ANATOMY OF A FILTER MODULE
 

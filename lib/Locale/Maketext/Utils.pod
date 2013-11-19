@@ -276,6 +276,24 @@ However if we do that like this:
 
 Then the parser can simply ignore the call to makevar() and find the value it is interested in via translatable()
 
+Additionally, since makevar() is meant to work with variables it also has the distinction of taking an array ref, as its only arg, that contains the arguments you’d normally pass to make*().
+
+This makes it easier/possible to do something like this:
+
+    $locale->makevar(@mystuff)
+
+in, say, Template Toolkit syntax.
+
+For example, if 'api_mt_result' is [ 'You have [quant,_1,user,users].', 42 ] you could do:
+
+    [% locale.makevar(api_mt_result) %]
+
+instead of something hacky and convoluted like:
+
+    [%- SET item_list = [] -%]
+    [%- FOREACH i IN api_mt_result; item_list.push(i.json); END -%]
+    [% '\[% locale.makevar(' _ item_list.join(", ") _ ') %\]' | evaltt %]
+
 =head2 $lh->get_asset()
 
 Helps you find an asset for a locale based on the locale's fallback.
@@ -704,6 +722,8 @@ It won't look right in a terminal (e.g. Click here (http://….) for the documen
 
 Supports L</"Arbitrary name/value attribute list">.
 
+The display text (whether from arg (i.e. simple form) or from “html” or “plain” keys) can have embedded methods.
+
 =item * chr()
 
 Output the character represented by the given number. It is a wrapper around perl's built-in L<chr> function that also encodes the value into the handle's encoding if it's over 127, and outputs as appropriate for the UI.
@@ -780,6 +800,10 @@ Takes 2 arguments: the abbreviated form and the non-abbreviated form.
 
 Supports L</"Arbitrary name/value attribute list"> except 'title' which will be ignored if given.
 
+Best for truncation type abbreviations. (Mnemonic: abbr is a truncated word itself)
+
+If you want to further pin down the type of abbreviation is is you can specify a more specific class (e.g. end-clip, blend, numeronym, begin-clip, phonogram, contraction,  portmanteau, apheresis, aphesis, etc).
+
 =item * acronym()
 
 Takes 2 arguments: the acronym and what it stands for. 
@@ -787,6 +811,14 @@ Takes 2 arguments: the acronym and what it stands for.
    [output,acronym,SCUBA,Self Contained Underwater Breathing Apparatus]
 
 Supports L</"Arbitrary name/value attribute list"> except 'title' which will be ignored if given.
+
+Best for initial type abbreviations. (Typically all caps)
+
+To be HTML5 compat it outputs <abbr> with a class of “initialism” (like bootstrap).
+
+If you want to further pin down the type of abbreviation is is you can specify a more specific class (e.g. acronym, hybrid, acrostic, alphabetism, backronym, macronym, recursive, context, composite, etc).
+
+If you do pass in a class value “initialism” is still retained.
 
 =item * sup()
 
@@ -899,6 +931,8 @@ This happens automatically if needed so you shouldn't have to call it unless you
 
 Otherwise it accepts 'html', 'ansi', or 'plain'.
 
+Returns the context that it sets it to (or an empty string if you pass in a second true argument).
+
 =item * get_context()
 
 Takes no arguments.
@@ -909,13 +943,19 @@ Returns 'html', 'ansi', or 'plain'. Calls $lh->set_context() if it has not been 
 
 Takes no arguments. Sets the contect to 'html'.
 
+Returns the context it was set to previously (or an empty string if you pass in a second true argument) on success, false otherwise.
+
 =item * set_context_ansi()
 
 Takes no arguments. Sets the contect to 'ansi'.
 
+Returns the context it was set to previously (or an empty string if you pass in a second true argument) on success, false otherwise.
+
 =item * set_context_plain()
 
 Takes no arguments. Sets the contect to 'plain'.
+
+Returns the context it was set to previously (or an empty string if you pass in a second true argument) on success, false otherwise.
 
 =item * context_is()
 

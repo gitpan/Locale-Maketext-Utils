@@ -6,8 +6,6 @@ use warnings;
 sub normalize_maketext_string {
     my ($filter) = @_;
 
-    return $filter->return_value_noop() if !$filter->run_extra_filters();
-
     my $string_sr = $filter->get_string_sr();
 
     if ( ${$string_sr} !~ m/[\!\?\.\:\]…]$/ ) {    # ? TODO ? smarter check that is is actual bracket notation and not just a string ?
@@ -21,7 +19,7 @@ sub normalize_maketext_string {
     return $filter->return_value;
 }
 
-# this is a really, really, REALLY dumb check (that is why this filter is a warning), free not to use it!
+# this is a really, really, REALLY, *REALLY* dumb check (that is why this filter is a warning)
 sub __is_title_case {
     my ($string) = @_;
 
@@ -33,7 +31,7 @@ sub __is_title_case {
         next if !defined $word || $word eq '';    # e.g ' … X Y'
         next if $word =~ m/^[A-Z\[]/;             # When would a title/label ever start life w/ a beginning ellipsis? i.e. ' … Address' instead of 'Email Address'.
                                                   #     If it is a short conclusion it should have puncutaion, e.g. 'Compiling …' ' … done.'
-        next if length($word) > 3;                # There are longer words that should be lowercase, there are shorter words that should be capitol: see “this is a …” above
+        next if length($word) < 3;                # There are longer words that should be lowercase (hint: [asis] [comment]), there are shorter words that should be capitol: see “this is a …” above
 
         $possible_ick++;
     }
@@ -81,6 +79,24 @@ None
 =item Non title/label does not end with some sort of punctuation or bracket notation.
 
 Problem should be self explanatory. Ending punctuation is not !, ?, ., :, bracket notation, or an ellipsis character.
+
+If it is legit you could address this by adding a [comment] to the end for clarity and to make it harder to use as a partial phrase.
+
+   For some reason I must not end well[comment,no puncuation because …]
+
+If it is titlecase and it has word longer than 2 characters that must start with a lower case letter you have 2 options:
+
+=over 4
+
+=item 1 use asis()
+
+    Buy [asis,aCme™] Products
+
+=item 2 use comment() with a comment that does not have a space or a non-break space:
+
+    People [comment,this-has-to-start-with-lowercase-because-…]for Love
+
+=back
 
 =back
 

@@ -1,4 +1,5 @@
-use Test::More tests => 105;
+use Test::More tests => 193;
+use Test::Warn;
 
 BEGIN {
     chdir 't';
@@ -7,7 +8,28 @@ BEGIN {
     use_ok('MyTestLocale');
 }
 
+my %context = ( 'plain' => '', 'ansi' => '', 'html' => '' );
+
 my $lh = MyTestLocale->get_handle('en');
+
+my $bytes = "jalape\xc3\xb1o.b\xc3\xbcrn";    # explicitly be a bytes string (jalapeño.bürn)
+my $punyd = 'xn--jalapeo-9za.xn--brn-hoa';
+
+is( $lh->output_encode_puny($bytes), $punyd, "domain: unicode to punycode" );
+is( $lh->output_encode_puny($punyd), $punyd, "domain: punycode to punycode does not re-encode" );
+is( $lh->output_decode_puny($punyd), $bytes, "domain: punycode to unicode" );
+is( $lh->output_decode_puny($bytes), $bytes, "domain: unicode to unicode does not re-encode" );
+
+my $local = "caf\xc3\xa9";                    # explicitly be a bytes string (café)
+my $punyl = "xn--caf-dma";
+for my $at_sign ( '@', "\xef\xbc\xa0", "\xef\xb9\xab" ) {
+    my $hex = unpack( "H*", $at_sign );
+    diag "Starting $at_sign ($hex)";
+    is( $lh->output_encode_puny("$local$at_sign$bytes"), "$punyl\@$punyd",       "email($at_sign): unicode to punycode" );
+    is( $lh->output_encode_puny("$punyl\@$punyd"),       "$punyl\@$punyd",       "email($at_sign): punycode to punycode does not re-encode" );
+    is( $lh->output_decode_puny("$punyl\@$punyd"),       "$local\@$bytes",       "email($at_sign): punycode to unicode" );
+    is( $lh->output_decode_puny("$local$at_sign$bytes"), "$local$at_sign$bytes", "email($at_sign): unicode to unicode does not re-encode" );
+}
 
 $lh->{'-t-STDIN'} = 1;
 is( $lh->maketext('x [output,underline,y] z'), "x \e[4my\e[0m z", 'output underline text' );
@@ -54,6 +76,16 @@ is(
     'You must go IMG to URL to complete your registration.',
     'embedded args in output,url’s “html” and “plain” values'
 );
+is(
+    $lh->maketext( 'X [output,url,_1,I chr(38) Z] A.', 'URL' ),
+    'X I & Z (URL) A.',
+    'embedded methods in output,url’s simple form'
+);
+is(
+    $lh->maketext( 'X [output,url,_1,html,Y chr(38) Z,plain,W chr(38) Z] A.', 'URL' ),
+    'X W & Z URL A.',
+    'embedded methods in output,url’s “html” and “plain” values'
+);
 
 # TODO: "# arbitrary attribute key/value args" tests in non-HTML context
 
@@ -91,6 +123,17 @@ is(
     'You must <a href="URL">click on IMG</a> to complete your registration.',
     'embedded args in output,url’s “html” and “plain” values'
 );
+is(
+    $lh->maketext( 'X [output,url,_1,html,Y chr(38) Z,plain,W chr(38) Z] A.', 'URL' ),
+    'X <a href="URL">Y &amp; Z</a> A.',
+    'embedded methods in output,url’s “html” and “plain” values'
+);
+is(
+    $lh->maketext( 'X [output,url,_1,I chr(38) Z] A.', 'URL' ),
+    'X <a href="URL">I &amp; Z</a> A.',
+    'embedded methods in output,url’s simple form'
+);
+
 is(
     $lh->maketext('Y [output,strong,Hellosub(Z)Qsup(Y)Qchr(42)Qnumf(1)] Z'),
     'Y <strong>Hello<sub>Z</sub>Q<sup>Y</sup>Q*Q1</strong> Z',
@@ -141,12 +184,16 @@ is( $lh->maketext('[output,abbr,FoBa.,Foo Bar,baz,wop,title,wrong]'), '<abbr tit
 is( $lh->maketext( '[output,abbr,FoBa.,Foo Bar,baz,wop,_1]', { a => 1, title => 'wrong' } ), '<abbr title="Foo Bar" baz="wop" a="1">FoBa.</abbr>', 'ouput abbr() w/ arbitrary attributes + hashref - title ignored' );
 is( $lh->maketext( '[output,abbr,FoBa.,Foo Bar,_1]', { a => 1 } ), '<abbr title="Foo Bar" a="1">FoBa.</abbr>', 'ouput abbr() w/ hashref' );
 
-is( $lh->maketext('[output,acronym,FB,Foo Bar]'),         '<acronym title="Foo Bar">FB</acronym>',           'output acronym() standard' );
-is( $lh->maketext('[output,acronym,FB,Foo Bar,baz,wop]'), '<acronym title="Foo Bar" baz="wop">FB</acronym>', 'ouput acronym() w/ arbitrary attributes' );
-is( $lh->maketext( '[output,acronym,FB,Foo Bar,baz,wop,_1]', { a => 1 } ), '<acronym title="Foo Bar" baz="wop" a="1">FB</acronym>', 'ouput acronym() w/ arbitrary attributes + hashref' );
-is( $lh->maketext('[output,acronym,FB,Foo Bar,baz,wop,title,wrong]'), '<acronym title="Foo Bar" baz="wop">FB</acronym>', 'ouput acronym() w/ arbitrary attributes - title ignored' );
-is( $lh->maketext( '[output,acronym,FB,Foo Bar,baz,wop,_1]', { a => 1, title => 'wrong' } ), '<acronym title="Foo Bar" baz="wop" a="1">FB</acronym>', 'ouput acronym() w/ arbitrary attributes + hashref - title ignored' );
-is( $lh->maketext( '[output,acronym,FB,Foo Bar,_1]', { a => 1 } ), '<acronym title="Foo Bar" a="1">FB</acronym>', 'ouput acronym() w/ hashref' );
+is( $lh->maketext('[output,acronym,FB,Foo Bar]'),         '<abbr title="Foo Bar" class="initialism">FB</abbr>',           'output acronym() standard' );
+is( $lh->maketext('[output,acronym,FB,Foo Bar,baz,wop]'), '<abbr title="Foo Bar" baz="wop" class="initialism">FB</abbr>', 'ouput acronym() w/ arbitrary attributes' );
+is( $lh->maketext( '[output,acronym,FB,Foo Bar,baz,wop,_1]', { a => 1 } ), '<abbr title="Foo Bar" baz="wop" a="1" class="initialism">FB</abbr>', 'ouput acronym() w/ arbitrary attributes + hashref' );
+is( $lh->maketext('[output,acronym,FB,Foo Bar,baz,wop,title,wrong]'), '<abbr title="Foo Bar" baz="wop" class="initialism">FB</abbr>', 'ouput acronym() w/ arbitrary attributes - title ignored' );
+is( $lh->maketext( '[output,acronym,FB,Foo Bar,baz,wop,_1]', { a => 1, title => 'wrong' } ), '<abbr title="Foo Bar" baz="wop" a="1" class="initialism">FB</abbr>', 'ouput acronym() w/ arbitrary attributes + hashref - title ignored' );
+is( $lh->maketext( '[output,acronym,FB,Foo Bar,_1]', { a => 1 } ), '<abbr title="Foo Bar" a="1" class="initialism">FB</abbr>', 'ouput acronym() w/ hashref' );
+
+is( $lh->maketext('[output,acronym,FB,Foo Bar,class,fiddle]'), '<abbr title="Foo Bar" class="initialism fiddle">FB</abbr>', 'ouput acronym() does initialism class on arb arg' );
+is( $lh->maketext( '[output,acronym,FB,Foo Bar,_1]', { class => "faddle" } ), '<abbr title="Foo Bar" class="initialism faddle">FB</abbr>', 'ouput acronym() does initialism class on arb args and arb hash' );
+is( $lh->maketext( '[output,acronym,FB,Foo Bar,class,fiddle,_1]', { class => "faddle" } ), '<abbr title="Foo Bar" class="initialism fiddle" class="initialism faddle">FB</abbr>', 'ouput acronym() does initialism class w/ both arb args and arb hash' );
 
 is( $lh->maketext('[output,underline,Foo Bar]'),         '<span style="text-decoration: underline">Foo Bar</span>',           'output inline() standard' );
 is( $lh->maketext('[output,underline,Foo Bar,baz,wop]'), '<span style="text-decoration: underline" baz="wop">Foo Bar</span>', 'ouput underline() w/ arbitrary attributes' );
@@ -162,3 +209,77 @@ is( $lh->maketext( '[output,img,SRC,ALT,baz,wop,_1]', { a => 1 } ), '<img src="S
 is( $lh->maketext('[output,img,SRC,ALT,baz,wop,src,wrong,alt,wrong]'), '<img src="SRC" alt="ALT" baz="wop"/>', 'output img() - w/ arbitrary attributes - alt, src ignored' );
 is( $lh->maketext( '[output,img,SRC,ALT,baz,wop,_1]', { a => 1, src => 'wrong', alt => 'wrong' } ), '<img src="SRC" alt="ALT" baz="wop" a="1"/>', 'output img() - w/ arbitrary attributes + hash - alt, src ignored' );
 is( $lh->maketext( '[output,img,SRC,ALT,_1]', { a => 1 } ), '<img src="SRC" alt="ALT" a="1"/>', 'output img() w/ hashref' );
+
+is( $lh->maketext('[output,url,http://foo,href,FOO,bar,baz]'),        '<a bar="baz" href="http://foo">http://foo</a>', 'output,url no text: ignored href passed in' );
+is( $lh->maketext('[output,url,http://foo,IMTEXT,href,FOO,bar,baz]'), '<a bar="baz" href="http://foo">IMTEXT</a>',     'output,url w/ text: ignored href passed in' );
+
+# output,url-trailing-var ambiguity
+is( $lh->maketext( "[output,url,_1,I AM TEXT,title,imatitle,attr,_2]", "http://search.cpan.org", "what am i" ), '<a title="imatitle" attr="what am i" href="http://search.cpan.org">I AM TEXT</a>', "output,url-trailing-var ambiguity: link text end var string" );
+is( $lh->maketext( "[output,url,_1,I AM TEXT,title,imatitle,attr,imaattr,_2]", "http://search.cpan.org", { "attr_x" => "what am i" } ), '<a title="imatitle" attr="imaattr" attr_x="what am i" href="http://search.cpan.org">I AM TEXT</a>', "output,url-trailing-var ambiguity: link text end var hash" );
+is( $lh->maketext( "[output,url,_1,title,imatitle,attr,_2]", "http://search.cpan.org", "what am i" ), '<a title="imatitle" attr="what am i" href="http://search.cpan.org">http://search.cpan.org</a>', "output,url-trailing-var ambiguity: no link text end var string" );
+is( $lh->maketext( "[output,url,_1,title,imatitle,attr,imaattr,_2]", "http://search.cpan.org", { "attr_x" => "what am i" } ), '<a title="imatitle" attr="imaattr" attr_x="what am i" href="http://search.cpan.org">http://search.cpan.org</a>', "output,url-trailing-var ambiguity: no link text end var hash" );
+is( $lh->maketext( "[output,url,_1,I AM TEXT,title,imatitle,attr,val]", "http://search.cpan.org" ), '<a title="imatitle" attr="val" href="http://search.cpan.org">I AM TEXT</a>', "output,url-trailing-var ambiguity: link text end string" );
+is( $lh->maketext( "[output,url,_1,title,imatitle,attr,val]", "http://search.cpan.org" ), '<a title="imatitle" attr="val" href="http://search.cpan.org">http://search.cpan.org</a>', "output,url-trailing-var ambiguity: no link text end string" );
+is( $lh->maketext( "[output,url,_1,I AM TEXT,_2]", "http://search.cpan.org", "what am i" ), '<a I AM TEXT="what am i" href="http://search.cpan.org">http://search.cpan.org</a>', "output,url-trailing-var ambiguity: link text, end var (indicated caller mistake, pass a hash!)" );
+is( $lh->maketext( "[output,url,_1,I AM TEXT,_2]", "http://search.cpan.org", { "attr_x" => "what am i" } ), '<a attr_x="what am i" href="http://search.cpan.org">I AM TEXT</a>', "output,url-trailing-var ambiguity: link text, end hash" );
+is( $lh->maketext( "[output,url,_1,_2]", "http://search.cpan.org", "what am i" ), '<a href="http://search.cpan.org">what am i</a>', "output,url-trailing-var ambiguity: no link text, end var (indicated caller mistake, pass a hash!)" );
+is( $lh->maketext( "[output,url,_1,_2]", "http://search.cpan.org", { "attr_x" => "what am i" } ), '<a attr_x="what am i" href="http://search.cpan.org">http://search.cpan.org</a>', "output,url-trailing-var ambiguity: no link text, end hash" );
+is( $lh->maketext( "[output,url,_1,I AM TEXT]", "http://search.cpan.org", "what am i" ), '<a href="http://search.cpan.org">I AM TEXT</a>', "output,url-trailing-var ambiguity: end link test" );
+
+#### context ##
+
+delete $lh->{'-t-STDIN'};
+like( $lh->get_context(), qr/(?:html|ansi|plain)/, 'get_context() returns context' );
+ok( exists $lh->{'-t-STDIN'}, 'get_context() sets context if needed' );
+
+for my $type ( qw(html ansi plain), "xustom-$$" ) {
+    my $set = sub {
+        is( $lh->set_context($type), $type, "set_context($type) returns context" );
+        is( $lh->set_context( $type, 1 ), '', "set_context($type,1) returns empty string" );
+    };
+
+    if ( $type eq "xustom-$$" ) {
+        warnings_like { $set->() }[ qr/Given context .* is unknown/, qr/Given context .* is unknown/ ], "Unknown context throws warning";
+    }
+    else {
+        $set->();
+    }
+
+    is( $lh->get_context(), $type, "get_context() returns $type" );
+    ok( $lh->context_is($type), "context_is($type) returns true under $type" );
+
+    for my $xtype (qw(html ansi plain)) {
+        my $meth = "context_is_$xtype";
+        if ( $type eq $xtype ) {
+            ok( $lh->$meth(), "$meth() returns true under $type" );
+        }
+        else {
+            ok( !$lh->$meth(), "$meth() returns false under $type" );
+        }
+    }
+
+    for my $xype ( sort keys %context ) {
+        next if $xype eq $type;
+        ok( !$lh->context_is($xype), "context_is($xype) returns false under $type" );
+    }
+}
+
+is( $lh->set_context_html(), "xustom-$$", 'set_context_html() returns previous context' );
+ok( $lh->context_is('html'), 'set_context_html() sets context to html' );
+
+is( $lh->set_context_ansi(), 'html', 'set_context_ansi() returns previous context' );
+ok( $lh->context_is('ansi'), 'set_context_ansi() sets context to ansi' );
+
+is( $lh->set_context_plain(), 'ansi', 'set_context_plain() returns previous context' );
+ok( $lh->context_is('plain'), 'set_context_plain() sets context to plain' );
+
+$lh->set_context('plain');
+is( $lh->maketext_html_context('X [output,strong,Y] z.'), 'X <strong>Y</strong> z.', 'maketext_html_context() does html context' );
+is( $lh->get_context(), 'plain', 'maketext_html_context() does not reset context' );
+
+is( $lh->maketext_ansi_context('X [output,strong,Y] z.'), "X \e[1mY\e[0m z.", 'maketext_ansi_context() does ansi context' );
+is( $lh->get_context(),                                   'plain',            'maketext_ansi_context() does not reset context' );
+
+$lh->set_context('html');
+is( $lh->maketext_plain_context('X [output,strong,Y] z.'), 'X Y z.', 'maketext_plain_context() does plain context' );
+is( $lh->get_context(),                                    'html',   'maketext_plain_context() does not reset context' );

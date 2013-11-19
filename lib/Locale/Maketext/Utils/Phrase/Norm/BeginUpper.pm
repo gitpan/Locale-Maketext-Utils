@@ -8,7 +8,7 @@ sub normalize_maketext_string {
 
     my $string_sr = $filter->get_string_sr();
 
-    if ( ${$string_sr} !~ m/\A(?:[A-Z]|(?:\[[^\]]+)|(?: …))/ ) {
+    if ( ${$string_sr} !~ m/\A(?:[A-Z]|(?:\[[^\]]+)|(?: …)|“)/ ) {
 
         # ${$string_sr} = "[comment,beginning needs to be upper case ?]" . ${$string_sr};
         $filter->add_warning('Does not start with an uppercase letter, ellipsis preceded by space, or bracket notation.');
@@ -49,8 +49,14 @@ None
 
 =over 4
 
-=item Does not start with an uppercase letter, ellipsis preceded by space, or bracket notation.
+=item Does not start with an uppercase letter, ellipsis preceded by space, opening curly quote, or bracket notation.
 
 Problem should be self explanatory.
+
+If it is legit you could address this by adding a [comment] or [asis] to the beginning for clarity and to make it harder to use as a partial phrase.
+
+   [comment,lc because …]lowercase this must be for some reason.
+
+   [asis,brian d foy] is really cool!
 
 =back

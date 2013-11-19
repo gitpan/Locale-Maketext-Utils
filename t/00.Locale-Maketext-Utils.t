@@ -1,4 +1,4 @@
-use Test::More tests => 115;
+use Test::More tests => 119;
 use Test::Warn;
 
 BEGIN {
@@ -29,6 +29,9 @@ package TestApp::Localize::en;
 use base 'TestApp::Localize';
 
 package TestApp::Localize::en_us;
+use base 'TestApp::Localize';
+
+package TestApp::Localize::es_es;
 use base 'TestApp::Localize';
 
 package TestApp::Localize::i_default;
@@ -89,10 +92,10 @@ like( ref($no_arg), qr/TestApp::Localize::en(?:\_us)?/, 'no argument has highest
 my $en = TestApp::Localize->get_handle('en');
 ok( $ENV{'maketext_obj'} eq $en, 'ENV maketext_obj_skip_env false' );
 
-ok( $en->get_language_class()                   eq 'TestApp::Localize::en', 'get_language_class() obj method' );
+ok( $en->get_language_class() eq 'TestApp::Localize::en',                   'get_language_class() obj method' );
 ok( TestApp::Localize::fr->get_language_class() eq 'TestApp::Localize::fr', 'get_language_class() class method' );
-ok( !defined $en->get_base_class_dir(),     'get_base_class_dir() returns undefined for non .pm based base class' );
-ok( !defined $en->list_available_locales(), 'list_available_locales() returns undefined for non .pm based base class' );
+ok( !defined $en->get_base_class_dir(),                                     'get_base_class_dir() returns undefined for non .pm based base class' );
+ok( !defined $en->list_available_locales(),                                 'list_available_locales() returns undefined for non .pm based base class' );
 
 my $has_sub_todo = eval { require Sub::Todo } ? 1 : 0;
 $! = 0;    # just to be sure
@@ -144,8 +147,8 @@ SKIP: {
     $! = 0;
 }
 
-ok( $en->language_tag()                 eq 'en', 'get_handle en' );
-ok( $en->langtag_is_loadable('invalid') eq '0',  'langtag_is_loadable() w/ unloadable tag' );
+ok( $en->language_tag() eq 'en',                'get_handle en' );
+ok( $en->langtag_is_loadable('invalid') eq '0', 'langtag_is_loadable() w/ unloadable tag' );
 ok(
     ref $en->langtag_is_loadable('fr') eq 'TestApp::Localize::fr',
     'langtag_is_loadable() w/ loadable tag'
@@ -158,7 +161,7 @@ my $one   = TestApp::Localize->get_handle( 'en', 'fr' );
 my $two   = TestApp::Localize->get_handle( 'en', 'fr' );
 my $three = TestApp::Localize->get_handle( 'fr', 'en' );
 
-ok( $one eq $two, 'singleton same order is the same obj' );
+ok( $one eq $two,   'singleton same order is the same obj' );
 ok( $two ne $three, 'singleton different order is not the same obj' );
 
 ok( $en->encoding() eq 'utf8', 'base $Encoding' );
@@ -189,14 +192,17 @@ ok( $alias1->get_language_tag() eq 'i_alias1', '$Aliaspkg w/ string' );
 my $alias2 = TestApp::Localize->get_handle('i_alias2');
 ok( $alias2->get_language_tag() eq 'i_alias2', '$Aliaspkg w/ array ref 1' );
 my $alias3 = TestApp::Localize->get_handle('i_alias3');
-ok( $alias3->get_language_tag() eq 'i_alias3',           '$Aliaspkg w/ array ref 2' );
-ok( $alias1->fetch('One Side')  eq 'I am not one sides', 'Base class make_alias' );
+ok( $alias3->get_language_tag() eq 'i_alias3',          '$Aliaspkg w/ array ref 2' );
+ok( $alias1->fetch('One Side') eq 'I am not one sides', 'Base class make_alias' );
 
 # ok($alias2->fetch('One Side') eq 'One Side', 'Extended class make_alias');
 
 my $en_US = TestApp::Localize->get_handle('en-US');
-ok( $en_US->language_tag()     eq 'en-us', 'get_handle en-US' );
+ok( $en_US->language_tag() eq 'en-us',     'get_handle en-US' );
 ok( $en_US->get_language_tag() eq 'en_us', 'get_language_tag()' );
+
+my $fallback = TestApp::Localize->get_handle('ca');
+is( $fallback->get_language_tag(), 'es_es', 'fallback object is from CLDR not I18N::LangTags::panic_languages() (ca would be fr in this class)' );
 
 my $fr = TestApp::Localize->get_handle('fr');
 {
@@ -215,22 +221,26 @@ my $fr = TestApp::Localize->get_handle('fr');
     is( $fr->lextext('Hello World'), '[output,strong,Bonjour] Monde', 'lextext() returns the lexicon value in uncompiled form after the compiled value is cached' );
 }
 
-ok( $fr->language_tag() eq 'fr', 'get_handle fr' );
+ok( $fr->language_tag() eq 'fr',                  'get_handle fr' );
 ok( $fr->get_base_class() eq 'TestApp::Localize', 'get_base_class()' );
-is( $fr->fetch('Hello World'), '<strong>Bonjour</strong> Monde', 'fetch() method' );
+{
+    local $fr->{'-t-STDIN'} = 0;
+    is( $fr->fetch('Hello World'), '<strong>Bonjour</strong> Monde', 'fetch() method' );
+}
 ok( $fr->{'numf_comma'} eq '1', 'init set value ok' );
 
 # safe to assume print() will work to if fetch() does...
 
 {
-    local $/ = "\n";                                                                                           # just to be sure we're testing consistently...
+    local $/ = "\n";               # just to be sure we're testing consistently …
+    local $fr->{'-t-STDIN'} = 0;
     is( $fr->get('Hello World'), "<strong>Bonjour</strong> Monde\n", 'get() method' );
 
     # safe to assume say() will work to if get() does...
 }
-ok( $fr->encoding()         eq 'utf7',          'class $Encoding' );
-ok( $fr->fetch('Fallback')  eq 'Fallback orig', 'fallback  behavior' );
-ok( $fr->fetch('Thank you') eq 'Thank you',     'fail_with _AUTO behavior' );
+ok( $fr->encoding() eq 'utf7',                 'class $Encoding' );
+ok( $fr->fetch('Fallback') eq 'Fallback orig', 'fallback  behavior' );
+ok( $fr->fetch('Thank you') eq 'Thank you',    'fail_with _AUTO behavior' );
 
 $fr->append_to_lexicons(
     {
@@ -243,15 +253,15 @@ $fr->append_to_lexicons(
     }
 );
 
-ok( $fr->fetch('Thank you') eq 'Merci',        'append_to_lexicons()' );
-ok( $fr->fetch('Fallback')  eq 'Fallback new', 'fallback behavior after append' );
+ok( $fr->fetch('Thank you') eq 'Merci',       'append_to_lexicons()' );
+ok( $fr->fetch('Fallback') eq 'Fallback new', 'fallback behavior after append' );
 
 my $fr_hr = $fr->lang_names_hashref( 'en-uk', 'it', 'xxyyzz' );
 
-ok( $fr_hr->{'en'}     eq 'anglais',      'names default' );
-ok( $fr_hr->{'en-uk'}  eq 'anglais (uk)', 'names suffix' );
-ok( $fr_hr->{'it'}     eq 'italien',      'names normal' );
-ok( $fr_hr->{'xxyyzz'} eq 'xxyyzz',       'names fake' );
+ok( $fr_hr->{'en'} eq 'anglais',         'names default' );
+ok( $fr_hr->{'en-uk'} eq 'anglais (uk)', 'names suffix' );
+ok( $fr_hr->{'it'} eq 'italien',         'names normal' );
+ok( $fr_hr->{'xxyyzz'} eq 'xxyyzz',      'names fake' );
 
 my $sig_warn = exists $SIG{__WARN__} && defined $SIG{__WARN__} ? $SIG{__WARN__} : 'no exists/defined';
 
@@ -264,15 +274,15 @@ ok( $sig_warn eq $sig_warn_aft, 'main sig warn unchanged by lang_names_hashref()
 
 # ok($base_sig_warn eq $base_sig_warn_aft, 'locale::base sig warn unchanged by lang_names_hashref()');
 
-ok( $loc_hr->{'en'}     eq 'anglais',      'array context handle locale names default' );
-ok( $loc_hr->{'en-uk'}  eq 'anglais (uk)', 'array context handle locale names suffix' );
-ok( $loc_hr->{'it'}     eq 'italien',      'array context handle locale names normal' );
-ok( $loc_hr->{'xxyyzz'} eq 'xxyyzz',       'array context handle locale  names fake' );
+ok( $loc_hr->{'en'} eq 'anglais',         'array context handle locale names default' );
+ok( $loc_hr->{'en-uk'} eq 'anglais (uk)', 'array context handle locale names suffix' );
+ok( $loc_hr->{'it'} eq 'italien',         'array context handle locale names normal' );
+ok( $loc_hr->{'xxyyzz'} eq 'xxyyzz',      'array context handle locale  names fake' );
 
-ok( $nat_hr->{'en'}     eq 'English',      'array context native names default' );
-ok( $nat_hr->{'en-uk'}  eq 'English (uk)', 'array context native names suffix' );
-ok( $nat_hr->{'it'}     eq 'italiano',     'array context native names normal' );
-ok( $nat_hr->{'xxyyzz'} eq 'xxyyzz',       'array context native names fake' );
+ok( $nat_hr->{'en'} eq 'English',         'array context native names default' );
+ok( $nat_hr->{'en-uk'} eq 'English (uk)', 'array context native names suffix' );
+ok( $nat_hr->{'it'} eq 'italiano',        'array context native names normal' );
+ok( $nat_hr->{'xxyyzz'} eq 'xxyyzz',      'array context native names fake' );
 
 my $loadable_hr = $fr->loadable_lang_names_hashref( 'en-uk', 'it', 'xxyyzz', 'fr' );
 
@@ -319,7 +329,7 @@ delete $en->{'_get_key_from_lookup'};    #  don't this anymore
 # datetime
 
 ok( $en->maketext('[datetime]') =~ m{ \A \w+ \s \d+ [,] \s \d+ \z }xms, 'undef 1st undef 2nd' );
-ok( $en->maketext('[datetime,,YYYY]') =~ m{\d}, 'datetime() first arg empty string' );
+ok( $en->maketext('[datetime,,YYYY]') =~ m{\d},                         'datetime() first arg empty string' );
 is( $en->maketext('[datetime,,YYYY]'), $en->maketext('[current_year]'), 'current_year()' );
 
 # perl -MDateTime -E 'say DateTime::Locale->load("en")->format_for("yMMMM");'
@@ -400,11 +410,11 @@ ok( $en->maketext( "[join,-,_2,_4]", 1, 2, 3, 4 ) eq '2-4',     "join specifc" )
 
 # boolean
 
-ok( $en->maketext( 'boolean [boolean,_1,true,false] x',      1 )     eq 'boolean true x',  'boolean 2 arg true' );
-ok( $en->maketext( 'boolean [boolean,_1,true,false] x',      0 )     eq 'boolean false x', 'boolean 2 arg false' );
+ok( $en->maketext( 'boolean [boolean,_1,true,false] x',      1 ) eq 'boolean true x',      'boolean 2 arg true' );
+ok( $en->maketext( 'boolean [boolean,_1,true,false] x',      0 ) eq 'boolean false x',     'boolean 2 arg false' );
 ok( $en->maketext( 'boolean [boolean,_1,true,false] x',      undef ) eq 'boolean false x', 'boolean 2 arg undef' );
-ok( $en->maketext( 'boolean [boolean,_1,true,false,null] x', 1 )     eq 'boolean true x',  'boolean 3 arg true' );
-ok( $en->maketext( 'boolean [boolean,_1,true,false,null] x', 0 )     eq 'boolean false x', 'boolean 3 arg false' );
+ok( $en->maketext( 'boolean [boolean,_1,true,false,null] x', 1 ) eq 'boolean true x',      'boolean 3 arg true' );
+ok( $en->maketext( 'boolean [boolean,_1,true,false,null] x', 0 ) eq 'boolean false x',     'boolean 3 arg false' );
 ok( $en->maketext( 'boolean [boolean,_1,true,false,null] x', undef ) eq 'boolean null x',  'boolean 3 arg undef' );
 
 # output
@@ -471,6 +481,10 @@ like( $en->format_bytes( 2796553, 3 ), qr/2.\d{3} MB/, 'format_bytes() bytes ar
 # for my $ws ( sort keys %ws_spiff ) {
 #     is( Locale::Maketext::Utils::__WS($ws), $ws_spiff{$ws}{'expect'}, "__WS: $ws_spiff{$ws}{'name'}" );
 # }
+
+is( $en->makevar( "I am “[_1]”.", 'bob' ), 'I am “bob”.', 'makevar() maketext()s' );
+is( $en->makevar( [ "I am “[_1]”.", 'bob' ] ), 'I am “bob”.', 'makevar() maketext()s array ref (only arg)' );
+like( $en->makevar( ["I am “[_1]”."], 'bob' ), qr/^ARRAY/, 'makevar() does not maketext() array ref when there are more args' );
 
 # cleanup
 unlink "$dir/TestApp/Localize/it.pm";

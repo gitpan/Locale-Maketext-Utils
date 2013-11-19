@@ -140,9 +140,9 @@ my %meth = (
     '#'            => 'Should be passing in an unformatted number (numf alias).',
     'format_bytes' => 'Should be passing in the unformatted number of bytes.',
     'output'       => sub {
-        return 'Should be passing in character identifier.' if $_[0]->[1] eq 'chr';
-        return 'Displayed without modification.' if $_[0]->[1] eq 'asis' || $_[0]->[1] eq 'asis_for_tests';
-        return 'No args, character.' if $_[0]->[1] =~ m/^(?:nbsp|amp|quot|apos|shy|lt|gt)/;
+        return 'Should be passing in character identifier.'                                                  if $_[0]->[1] eq 'chr';
+        return 'Displayed without modification.'                                                             if $_[0]->[1] eq 'asis' || $_[0]->[1] eq 'asis_for_tests';
+        return 'No args, character.'                                                                         if $_[0]->[1] =~ m/^(?:nbsp|amp|quot|apos|shy|lt|gt)/;
         return 'Domain should be passed in. Hardcoded domain that needs translated should just be a string.' if $_[0]->[1] eq 'encode_puny' || $_[0]->[1] eq 'decode_puny';
         return;
     },
@@ -228,7 +228,7 @@ sub _get_bn_type_from_list {
 
                 if (   $list->[2] =~ m/\A$bn_var_arg\z/
                     && ( !exists $attr{'title'} || $attr{'title'} =~ m/\A$bn_var_arg\z/ )
-                    && ( !exists $attr{'alt'}   || $attr{'alt'}   =~ m/\A$bn_var_arg\z/ ) ) {
+                    && ( !exists $attr{'alt'}   || $attr{'alt'} =~ m/\A$bn_var_arg\z/ ) ) {
                     return 'basic_var';
                 }
             }
@@ -242,7 +242,7 @@ sub _get_bn_type_from_list {
                 if (   $list->[2] =~ m/\A$bn_var_arg\z/
                     && $list->[3] =~ m/\A$bn_var_arg\z/
                     && ( !exists $attr{'title'} || $attr{'title'} =~ m/\A$bn_var_arg\z/ )
-                    && ( !exists $attr{'alt'}   || $attr{'alt'}   =~ m/\A$bn_var_arg\z/ ) ) {
+                    && ( !exists $attr{'alt'}   || $attr{'alt'} =~ m/\A$bn_var_arg\z/ ) ) {
                     return 'basic_var';
                 }
             }

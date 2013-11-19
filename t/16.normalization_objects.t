@@ -5,6 +5,7 @@ use Locale::Maketext::Utils::Phrase::Norm;
 use Locale::Maketext::Utils::Phrase::cPanel;
 
 $INC{"Locale/Maketext/Utils/Phrase/Norm/TEST.pm"} = 1;
+no warnings 'once';
 *Locale::Maketext::Utils::Phrase::Norm::TEST::normalize_maketext_string = sub { };
 
 for my $type ( 0 .. 2 ) {

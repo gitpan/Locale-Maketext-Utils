@@ -27,17 +27,27 @@ sub normalize_maketext_string {
         $idx++;
         next if !ref($piece);
 
-        my $before = $idx == 0 ? undef() : $struct->[ $idx - 1 ];
+        my $before = $idx == 0 ? '' : $struct->[ $idx - 1 ];
         my $bn     = $piece->{'orig'};
-        my $after  = $idx == $last_idx ? undef() : $struct->[ $idx + 1 ];
+        my $after  = $idx == $last_idx ? '' : $struct->[ $idx + 1 ];
 
         if ( $piece->{'type'} eq 'var' || $piece->{'type'} eq 'basic_var' ) {
 
             # unless the “bare” bracket notation  …
             unless (
                 ( $idx == $last_idx && $before =~ m/\:(?:\x20|\xc2\xa0)/ && ( !defined $after || $after eq '' ) )    # … is a trailing '…: [_2]'
-                or ( $before !~ m/(?:\x20|\xc2\xa0)$/ && $after !~ m/^(?:\x20|\xc2\xa0)/ )                           # … is surrounded by non-whitespace already
-                or ( $before =~ m/,(?:\x20|\xc2\xa0)$/ && $after =~ m/^,/ )                                          # … is in a comma reference
+                #tidyoff
+                or (
+                    ( $before !~ m/(?:\x20|\xc2\xa0)$/ && $after !~ m/^(?:\x20|\xc2\xa0)/ ) # … is surrounded by non-whitespace already
+                    &&
+                    ( $before !~ m/[a-zA-Z0-9]$/ && $after !~ m/^[a-zA-Z0-9]/ )             # … and that non-whitespace is also non-alphanumeric (TODO target phrases need a lookup)
+                )
+                #tidyon
+                or ( $before =~ m/,(?:\x20|\xc2\xa0)$/        && $after =~ m/^,/ )                                        # … is in a comma reference
+                or ( $before =~ m/\([^\)]+(?:\x20|\xc2\xa0)$/ && $after =~ m/^\)/ )                                       # … is at the end of parenthesised text
+                or ( $before =~ m/\($/                        && $after =~ m/(?:\x20|\xc2\xa0)[^\)]+\)/ )                 # … is at the beginning of parenthesised text
+                or ( $before =~ m/(?:\x20|\xc2\xa0)$/         && $after =~ m/’s(?:\x20|\xc2\xa0|;.|,.|[\!\?\.\:])/ )    # … is an apostrophe-s (curly so its not markup!)
+
               ) {
                 ${$string_sr} =~ s/(\Q$bn\E)/“$1”/;
                 $has_bare++;
@@ -185,6 +195,10 @@ Depending on what you’re doing other things might work too:
 =item Parentheses:
 
    The domain ([_1]) could not be found.
+
+   The clown (AKA [_1]) is down.
+
+   The network ([_1] in IPv6) is up.
 
 =item Comma reference:
 

@@ -29,7 +29,7 @@ sub normalize_maketext_string {
         $error =~ s/[\n\r]+/ /g;
 
         $string =~ s/([\[\]])/~$1/g;
-        $error  =~ s/\Q$string\E.*$/$string/;
+        $error =~ s/\Q$string\E.*$/$string/;
         my $string_sr = $filter->get_string_sr();
         if ( $error =~ m/Can't locate object method "(.*)" via package "(.*)"/i ) {
             $error = "“$2” does not have a method “$1” in: $string";

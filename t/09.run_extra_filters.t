@@ -1,4 +1,4 @@
-use Test::More tests => 13;
+use Test::More skip_all => 'there are currently no extra filters to test';    # tests => 13;
 
 use Locale::Maketext::Utils::Phrase::Norm;
 
