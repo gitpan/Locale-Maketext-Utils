@@ -159,15 +159,17 @@ my %meth = (
 
         return;
     },
-    'current_year' => 'Takes no args.',
-    'asis'         => 'Displayed without modification.',
-    'comment'      => 'Not displayed.',
-    'join'         => 'Arbitrary args.',
-    'sprintf'      => 'Arbitrary args.',
-    'convert'      => 'Converts arbitrary units and identifiers.',    # ? technically USD -> GBP, not critical ATM ?
-    'list_and'     => 'Arbitrary args.',
-    'list_or'      => 'Arbitrary args.',
-    'list'         => 'Deprecated. Arbitrary args.',
+    'current_year'    => 'Takes no args.',
+    'asis'            => 'Displayed without modification.',
+    'comment'         => 'Not displayed.',
+    'join'            => 'Arbitrary args.',
+    'sprintf'         => 'Arbitrary args.',
+    'convert'         => 'Converts arbitrary units and identifiers.',    # ? technically USD -> GBP, not critical ATM ?
+    'list_and'        => 'Arbitrary args.',
+    'list_or'         => 'Arbitrary args.',
+    'list_and_quoted' => 'Arbitrary args.',
+    'list_or_quoted'  => 'Arbitrary args.',
+    'list'            => 'Deprecated. Arbitrary args.',
 );
 
 my %basic = (

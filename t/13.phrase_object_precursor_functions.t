@@ -129,6 +129,8 @@ my %bn_cont = (
             'join',
             'list_and',
             'list_or',
+            'list_and_quoted',
+            'list_or_quoted',
             'list',    # deprecated
             'datetime',
             'current_year',

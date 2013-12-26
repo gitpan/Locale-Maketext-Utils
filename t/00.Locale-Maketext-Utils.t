@@ -1,4 +1,4 @@
-use Test::More tests => 119;
+use Test::More tests => 131;
 use Test::Warn;
 
 BEGIN {
@@ -482,9 +482,37 @@ like( $en->format_bytes( 2796553, 3 ), qr/2.\d{3} MB/, 'format_bytes() bytes ar
 #     is( Locale::Maketext::Utils::__WS($ws), $ws_spiff{$ws}{'expect'}, "__WS: $ws_spiff{$ws}{'name'}" );
 # }
 
+is( $en->makethis( "[quant,_1,en-one,en-other,en-zero]", 0 ), 'en-zero', 'makethis() en' );
+is( $en->makethis_base( "[quant,_1,en-one,en-other,en-zero]", 0 ), 'en-zero', 'makethis_base() en' );
+is( $fr->makethis( "[quant,_1,en-one,en-other,en-zero]", 0 ), '0 en-one', 'makethis() non-en rule' );    # fr has no spec-zero so this should be fr rules
+is( $fr->makethis_base( "[quant,_1,en-one,en-other,en-zero]", 0 ), 'en-zero', 'makethis_base() non-en rule' );
+
+is( $fr->makethis( "[quant,_1,en-one,en-other,en-zero]", 123456 ), '123 456 en-other', 'makethis() non-en format' );    # fr has no spec-zero so this should be fr rules
+is( $fr->makethis_base( "[quant,_1,en-one,en-other,en-zero]", 123456 ), '123,456 en-other', 'makethis_base() non-en format' );
+
+{
+    local $fr->{'cache'}{'makethis_base'} = undef;
+    local $fr->{'fallback_locale'} = "fr";
+    is( $fr->makethis( "[quant,_1,en-one,en-other,en-zero]", 123456 ), '123 456 en-other', 'makethis() w/ fallback non-en format' );    # fr has no spec-zero so this should be fr rules
+    is( $fr->makethis_base( "[quant,_1,en-one,en-other,en-zero]", 123456 ), '123 456 en-other', 'makethis_base() w/ fallback non-en format' );
+}
+
 is( $en->makevar( "I am “[_1]”.", 'bob' ), 'I am “bob”.', 'makevar() maketext()s' );
 is( $en->makevar( [ "I am “[_1]”.", 'bob' ] ), 'I am “bob”.', 'makevar() maketext()s array ref (only arg)' );
 like( $en->makevar( ["I am “[_1]”."], 'bob' ), qr/^ARRAY/, 'makevar() does not maketext() array ref when there are more args' );
+
+for my $lh ( $en, $fr ) {
+    my $loc = $lh->get_locales_obj;
+
+    is( $lh->list_and( 1, 2, 3, 4, 5, 6 ), $loc->get_list_and( 1, 2, 3, 4, 5, 6 ), "list_and() has default behavior :: $loc->{'locale'}" );
+
+    my $str;
+    {
+        local $loc->{'misc'}{'list_quote_mode'} = 'all';
+        $str = $loc->get_list_and( 1, 2, 3, 4, 5, 6 )
+    }
+    is( $lh->list_and_quoted( 1, 2, 3, 4, 5, 6 ), $str,, "list_and_quoted() has 'all' behavior :: $loc->{'locale'}" );
+}
 
 # cleanup
 unlink "$dir/TestApp/Localize/it.pm";

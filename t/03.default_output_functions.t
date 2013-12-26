@@ -1,4 +1,4 @@
-use Test::More tests => 193;
+use Test::More tests => 195;
 use Test::Warn;
 
 BEGIN {
@@ -30,6 +30,10 @@ for my $at_sign ( '@', "\xef\xbc\xa0", "\xef\xb9\xab" ) {
     is( $lh->output_decode_puny("$punyl\@$punyd"),       "$local\@$bytes",       "email($at_sign): punycode to unicode" );
     is( $lh->output_decode_puny("$local$at_sign$bytes"), "$local$at_sign$bytes", "email($at_sign): unicode to unicode does not re-encode" );
 }
+
+# TODO: test decode error (much harder to trip …)
+is( $lh->output_encode_puny("I \xe2\x99\xa5 perl"),                      "Error: invalid string for punycode", 'invalid domain returns encode error' );
+is( $lh->output_encode_puny("I \xe2\x99\xa5 perl\@I \xe2\x99\xa5 perl"), "Error: invalid string for punycode", 'invalid email returns encode error' );
 
 $lh->{'-t-STDIN'} = 1;
 is( $lh->maketext('x [output,underline,y] z'), "x \e[4my\e[0m z", 'output underline text' );

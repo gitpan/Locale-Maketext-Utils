@@ -71,7 +71,7 @@ This document describes Locale::Maketext::Utils::Mock version 0.1
 
 =head1 DESCRIPTION
 
-Often we need to create a class so we can do a Locale::Maketext[::Utils] testing but Locale::Maketext is not designed for direct use. In stead you need to create a class with a lexicon and at least the 'en' subclass of that.
+Often we need to create a class so we can do a Locale::Maketext[::Utils] testing but Locale::Maketext is not designed for direct use. Instead you need to create a class with a lexicon and at least the 'en' subclass of that.
 
 This module does all the work for you and behaves like a typical L<Locale::Maketext::Utils> object.
 
@@ -97,6 +97,17 @@ It takes a list of locales tags, passes them through L<Locales::normalize_tag()|
 It can be called as a function, a class method, or object method.
 
 It returns the number of subclasses successfully created.
+
+=head2 create_method()
+
+Takes a hashref whose keys are the methods to make for mocked objects.
+
+The values are either a coderef for the method or undef. Undef will result in a coderef that returns “I am $key()”.
+
+    use Locale::Maketext::Utils::Mock ();
+    Locale::Maketext::Utils::Mock->create_method({ method_x => undef, method_y => sub { return "YABBA DABBA $_[1]" } });
+    my $lh = Locale::Maketext::Utils::Mock->get_handle();
+    print $lh->maketext("Blah [method_x] blah [method_y,_1] blah.", 42); $ Blah I am method_x() blah YABBA DABBA 42 blah.
 
 =head1 DIAGNOSTICS
 
