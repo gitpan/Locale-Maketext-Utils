@@ -22,11 +22,11 @@ requires:
   Encode: 0
   IO::Interactive::Tiny: 0
   Locale::Maketext: 1.23
-  Locales: 0.3
+  Locales: 0.32
   Module::Want: 0
   Net::IDN::Encode: 2.005
   Test::Carp: 0
   Test::More: 0
   Test::Warn: 0
   Web::Detect: 0.04
-version: 0.38
+version: 0.39

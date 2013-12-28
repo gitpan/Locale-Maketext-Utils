@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.38';
+$Locale::Maketext::Utils::VERSION = '0.39';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -795,8 +795,7 @@ sub list_and {
     # Even though get_locales_obj() memoizes/caches/singletons itself we can still avoid a
     # method call if we already have the Locales object that belongs to the handle's locale.
     $lh->{'Locales.pm'}{'_main_'} ||= $lh->get_locales_obj();
-
-    $lh->{'Locales.pm'}{'_main_'}->get_list_and( map { ref($_) eq 'ARRAY' ? @{$_} : $_ } @_ );
+    return $lh->{'Locales.pm'}{'_main_'}->get_list_and( map { ref($_) eq 'ARRAY' ? @{$_} : $_ } @_ );
 }
 
 sub list_or {
@@ -805,24 +804,23 @@ sub list_or {
     # Even though get_locales_obj() memoizes/caches/singletons itself we can still avoid a
     # method call if we already have the Locales object that belongs to the handle's locale.
     $lh->{'Locales.pm'}{'_main_'} ||= $lh->get_locales_obj();
-
-    $lh->{'Locales.pm'}{'_main_'}->get_list_or( map { ref($_) eq 'ARRAY' ? @{$_} : $_ } @_ );
+    return $lh->{'Locales.pm'}{'_main_'}->get_list_or( map { ref($_) eq 'ARRAY' ? @{$_} : $_ } @_ );
 }
 
 sub list_and_quoted {
-    my ($lh) = @_;
+    my ( $lh, @args ) = @_;
 
     $lh->{'Locales.pm'}{'_main_'} ||= $lh->get_locales_obj();
     local $lh->{'Locales.pm'}{'_main_'}{'misc'}{'list_quote_mode'} = 'all';
-    goto &list_and;
+    return $lh->list_and(@args);
 }
 
 sub list_or_quoted {
-    my ($lh) = @_;
+    my ( $lh, @args ) = @_;
 
     $lh->{'Locales.pm'}{'_main_'} ||= $lh->get_locales_obj();
     local $lh->{'Locales.pm'}{'_main_'}{'misc'}{'list_quote_mode'} = 'all';
-    goto &list_or;
+    return $lh->list_or(@args);
 }
 
 sub list {

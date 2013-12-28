@@ -7,7 +7,7 @@ WriteMakefile(
     VERSION_FROM => 'lib/Locale/Maketext/Utils.pm',
     PREREQ_PM    => {
         'Locale::Maketext'      => 1.23,
-        'Locales'               => 0.30,
+        'Locales'               => 0.32,
         'DateTime'              => 0,
         'Net::IDN::Encode'      => 2.005,
         'IO::Interactive::Tiny' => 0,

@@ -1,5 +1,8 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.39  Sat Dec 28 15:22:33 2013
+    - bump 0.38 prereq to ensure consistent behavior (1fff2ef8-6eac-11e3-91a4-85750ba9aafd)
+
 0.38  Thu Dec 26 17:40:06 2013
     - improve punycode logic
     - improve makethis_base() semantics

@@ -36,7 +36,7 @@
             "Encode" : "0",
             "IO::Interactive::Tiny" : "0",
             "Locale::Maketext" : "1.23",
-            "Locales" : "0.3",
+            "Locales" : "0.32",
             "Module::Want" : "0",
             "Net::IDN::Encode" : "2.005",
             "Test::Carp" : "0",
@@ -47,5 +47,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.38"
+   "version" : "0.39"
 }

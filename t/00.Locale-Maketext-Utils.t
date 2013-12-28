@@ -509,9 +509,9 @@ for my $lh ( $en, $fr ) {
     my $str;
     {
         local $loc->{'misc'}{'list_quote_mode'} = 'all';
-        $str = $loc->get_list_and( 1, 2, 3, 4, 5, 6 )
+        $str = $loc->get_list_and( 1, 2, 3, 4, 5, 6 );
     }
-    is( $lh->list_and_quoted( 1, 2, 3, 4, 5, 6 ), $str,, "list_and_quoted() has 'all' behavior :: $loc->{'locale'}" );
+    is( $lh->list_and_quoted( 1, 2, 3, 4, 5, 6 ), $str, "list_and_quoted() has 'all' behavior :: $loc->{'locale'}" );
 }
 
 # cleanup
