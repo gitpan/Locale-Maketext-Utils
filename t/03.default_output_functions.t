@@ -1,4 +1,4 @@
-use Test::More tests => 195;
+use Test::More tests => 197;
 use Test::Warn;
 
 BEGIN {
@@ -91,6 +91,8 @@ is(
     'embedded methods in output,url’s “html” and “plain” values'
 );
 
+is( $lh->maketext('X [asis,Truth amp() Justice] A.'), 'X Truth & Justice A.', 'embedded amp()' );
+
 # TODO: "# arbitrary attribute key/value args" tests in non-HTML context
 
 $lh->{'-t-STDIN'} = 0;
@@ -143,6 +145,8 @@ is(
     'Y <strong>Hello<sub>Z</sub>Q<sup>Y</sup>Q*Q1</strong> Z',
     'Embedded methods: sub(), sup(), chr(), and numf()'
 );
+
+is( $lh->maketext('X [asis,Truth amp() Justice] A.'), 'X Truth &amp; Justice A.', 'embedded amp()' );
 
 # arbitrary attribute key/value args
 

@@ -620,7 +620,7 @@ This method allows you to specify various output types. Those types allows a key
 
 Each output method name is the second argument to output. e.g. if the output method is 'xyz' you'd use it like this [output,xyz,…] and define a new one like this 'sub output_xyz { … }'.
 
-All output() methods support embedded methods: sub(), sup(), chr(), and numf(). Note: sub(), sup(), and numf() are simplified in that they only work with one argument.
+All output() methods support embedded methods: sub(), sup(), chr(), amp(), and numf(). Note: sub(), sup(), and numf() are simplified in that they only work with one argument.
 
 These default bare bones methods support 3 contexts: HTML, ANSI, and plain text. See L</output() context> below.
 

@@ -1,4 +1,5 @@
-use Test::More tests => 610;
+use Test::More tests => 618 + 1;
+use Test::NoWarnings;    # + 1
 
 BEGIN {
     use_ok('Locale::Maketext::Utils::Phrase::Norm');
@@ -540,6 +541,20 @@ ok( $norm_comp_filt_res->get_status(),             "norm: Compiles w/ existing B
 ok( !$norm_comp_filt_res->filters_modify_string(), "norm: Compiles w/ existing BN method: RES filters_modify_string()" );
 is( $norm_comp_filt_res->get_warning_count(),   0, "norm: Compiles w/ existing BN method: RES get_warning_count()" );
 is( $norm_comp_filt_res->get_violation_count(), 0, "norm: Compiles w/ existing BN method: RES get_violation_count()" );
+
+# argument count
+my $comp_filt_n = Locale::Maketext::Utils::Phrase::Norm->new_source( 'Compiles', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );
+my $comp_filt_n_res = $comp_filt_n->normalize('Hello [numf,_1] and [numf,_2].');
+ok( $comp_filt_n_res->get_status(),             "spec: Compiles.pm w/ existing BN method (more than 1 arg): RES get_status()" );
+ok( !$comp_filt_n_res->filters_modify_string(), "spec: Compiles.pm w/ existing BN method (more than 1 arg): RES filters_modify_string()" );
+is( $comp_filt_n_res->get_warning_count(),   0, "spec: Compiles.pm w/ existing BN method (more than 1 arg): RES get_warning_count()" );
+is( $comp_filt_n_res->get_violation_count(), 0, "spec: Compiles.pm w/ existing BN method (more than 1 arg): RES get_violation_count()" );
+
+my $norm_filt_n_res = $norm->normalize('Hello [numf,_1] and [numf,_2].');
+ok( $norm_filt_n_res->get_status(),             "norm: Compiles.pm w/ existing BN method (more than 1 arg): RES get_status()" );
+ok( !$norm_filt_n_res->filters_modify_string(), "norm: Compiles.pm w/ existing BN method (more than 1 arg): RES filters_modify_string()" );
+is( $norm_filt_n_res->get_warning_count(),   0, "norm: Compiles.pm w/ existing BN method (more than 1 arg): RES get_warning_count()" );
+is( $norm_filt_n_res->get_violation_count(), 0, "norm: Compiles.pm w/ existing BN method (more than 1 arg): RES get_violation_count()" );
 
 # escapes special cases
 my $esc_filt = Locale::Maketext::Utils::Phrase::Norm->new_source( 'Escapes', { 'run_extra_filters' => 1, 'skip_defaults_when_given_filters' => 1 } );

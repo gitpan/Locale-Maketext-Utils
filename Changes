@@ -1,5 +1,12 @@
 Revision history for Perl extension Locale::Maketext::Utils.
 
+0.40  Mon Jan 13 10:37:52 2014
+    - fix phrase-syntax check's number-of-args bug:
+      add g flag to arg count argument builder regexp in order to get
+       an array with enough items to fit with the BN count
+       (manifested by uninitialized value warnings in some circumstances)
+    - add amp() to embedded method list
+
 0.39  Sat Dec 28 15:22:33 2013
     - bump 0.38 prereq to ensure consistent behavior (1fff2ef8-6eac-11e3-91a4-85750ba9aafd)
 

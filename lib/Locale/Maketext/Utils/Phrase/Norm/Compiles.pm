@@ -17,7 +17,7 @@ sub normalize_maketext_string {
 
         # TODO: when we have a phrase class we can pass in proper args to each BN method, for now pass in a bunch of numbers tpo avoid warnings
         my $n = 0;
-        my @args = map { $n++ } ( $string =~ m/($bn_regexp)/ );
+        my @args = map { $n++ } ( $string =~ m/($bn_regexp)/g );
 
         $mt_obj->makethis( $string, @args );
     };

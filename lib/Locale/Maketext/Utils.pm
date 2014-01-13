@@ -3,7 +3,7 @@ package Locale::Maketext::Utils;
 # these work fine, but are not used in production
 # use strict;
 # use warnings;
-$Locale::Maketext::Utils::VERSION = '0.39';
+$Locale::Maketext::Utils::VERSION = '0.40';
 
 use Locale::Maketext 1.21 ();
 use Locales 0.26          ();
@@ -928,8 +928,7 @@ sub datetime {
     return $dt->format_cldr( $dt->{'locale'}->format_for($format) || $format || $dt->{'locale'}->date_format_long() );
 }
 
-# TODO: ? make these embeddable like chr() ?
-sub output_amp  { return $_[0]->output_chr(38) }
+sub output_amp  { return $_[0]->output_chr(38) }    # TODO: ? make the rest of these embeddable like amp() ?
 sub output_lt   { return $_[0]->output_chr(60) }
 sub output_gt   { return $_[0]->output_chr(62) }
 sub output_apos { return $_[0]->output_chr(39) }
@@ -1111,6 +1110,7 @@ sub __proc_emb_meth {
     $str =~ s/(su[bp])\(((?:\\\)|[^\)])+?)\)/my $s=$2;my $m="output_$1";$s=~s{\\\)}{\)}g;$lh->$m($s)/eg;
     $str =~ s/chr\(((?:\d+|[\S]))\)/$lh->output_chr($1)/eg;
     $str =~ s/numf\((\d+(?:\.\d+)?)\)/$lh->numf($1)/eg;
+    $str =~ s/amp\(\)/$lh->output_amp()/eg;
 
     return $str;
 }
