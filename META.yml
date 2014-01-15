@@ -27,6 +27,7 @@ requires:
   Net::IDN::Encode: 2.005
   Test::Carp: 0
   Test::More: 0
+  Test::NoWarnings: 0
   Test::Warn: 0
   Web::Detect: 0.04
-version: 0.40
+version: 0.41

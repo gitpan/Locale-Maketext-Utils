@@ -17,6 +17,7 @@ WriteMakefile(
         'Test::More'            => 0,
         'Test::Carp'            => 0,
         'Test::Warn'            => 0,
+        'Test::NoWarnings'      => 0,
 
         # 'Sub::Todo'             => 0,
     },
